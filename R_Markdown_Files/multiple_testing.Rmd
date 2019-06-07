@@ -1,0 +1,83 @@
+---
+title: "Correction for Multiple testing"
+output: github_document
+---
+
+<style type="text/css">
+  
+  
+h1.title {/* Header 1 */
+    font-size: 28px;
+    font-family:  "Times New Roman", Times, serif;
+    color: BLACK;
+    #text-transform: Capitalize;
+  }
+  
+h2 { /* Header 2 */
+    font-size: 24px;
+    font-family: "Times New Roman", Times, serif;
+    color: Black;
+    text-transform: none;
+  }
+h3 { /* Header 3 */
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: DarkBlue;
+    text-transform: none;
+  }
+  
+h4 { /* Header 4 */
+    font-size: 16px;
+    font-family: "Times New Roman", Times, serif;
+    color: Darkred;
+    text-transform: none;
+  }
+  </style>
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+               cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE,
+               eval=FALSE)
+opts_knit$set(width=75)
+```
+
+**Load the required libraries**
+```{r}
+      Packages <- c("dglm", "hglm", "gdata","readR","tidyr","ggplot",
+                    "qqman", "CMplot",  "dplyr", "ggplot2", "SNPRelate",
+                    "ggcorrplot", "statmod")
+    lapply(Packages, library, character.only = TRUE)
+
+```
+## **Multiple testing**
+
+* We will be using [Li and Ji (2005)](https://www.nature.com/articles/6800717) method for multiple testing and choose significance threshold level.
+The reason we use [Li an Ji (2005)](https://www.nature.com/articles/6800717)is to make sure to account for correlated markers (LD between markers) and determine independent number of tests.
+
+Below is the code for multiple testing:
+
+### Effective number of tests(Meff)
+```{r}
+# Read the orginal marker data used for DGLM and HGLM analysis
+      setwd("~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/Hcc_analysis")
+      geno<-readRDS(file="geno.rds")
+      geno<-as.matrix(geno)
+# get correlation matrix
+      corr.matrix <- cor(geno)
+# get effective number of tests
+# MEFF
+      meff<- meff(corr.matrix, method = "liji")
+### Determine threshold significance level
+      p_threshold= (1- (1-0.05))^1/meff
+      p_threshold
+```

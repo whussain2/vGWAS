@@ -1,0 +1,167 @@
+---
+title: "Hierarchical Generalized Linear Model (HGLM)"
+output: github_document
+---
+
+<style type="text/css">
+  
+  
+h1.title {/* Header 1 */
+    font-size: 28px;
+    font-family:  "Times New Roman", Times, serif;
+    color: BLACK;
+    #text-transform: Capitalize;
+  }
+  
+h2 { /* Header 2 */
+    font-size: 24px;
+    font-family: "Times New Roman", Times, serif;
+    color: Black;
+    text-transform: none;
+  }
+h3 { /* Header 3 */
+    font-size: 18px;
+    font-family: "Times New Roman", Times, serif;
+    color: DarkBlue;
+    text-transform: none;
+  }
+  
+h4 { /* Header 4 */
+    font-size: 16px;
+    font-family: "Times New Roman", Times, serif;
+    color: Darkred;
+    text-transform: none;
+  }
+  </style>
+
+```{r knitr_init, echo=FALSE, cache=FALSE}
+library(knitr)
+library(rmdformats)
+
+## Global options
+options(max.print="75")
+opts_chunk$set(echo=TRUE,
+               cache=TRUE,
+               prompt=FALSE,
+               tidy=TRUE,
+               comment=NA,
+               message=FALSE,
+               warning=FALSE,
+               eval=FALSE)
+opts_knit$set(width=75)
+```
+
+**Load the required libraries**
+```{r}
+      Packages <- c("dglm", "hglm", "gdata","readR","tidyr","ggplot",
+                    "qqman", "CMplot",  "dplyr", "ggplot2", "SNPRelate",
+                    "ggcorrplot", "statmod")
+    lapply(Packages, library, character.only = TRUE)
+
+```
+## **Hierarchical Generalized Linear Model (HGLM)**
+**Description**:
+
+* Here we will be modeling variance-heterogeneity using HGLM in hglm package. 
+* More details on HGLM modelling for genetics data can be found here [The hglm Package (Version 2.0)](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.478.7447&rep=rep1&type=pdf)
+* Again HGLM analysis was performed on Holland Computing Center (HCC) server at University of Nebraska, Lincoln. 
+* Here we are just providing the snippet of codes and not showing any outputs.
+
+### **Step 1**: Construct the Z matrix for HGLM analysis
+
+#### First we constrcut G-matrix ( [VanRanden 2008](https://www-ncbi-nlm-nih-gov.libproxy.unl.edu/pubmed/18946147))
+```{r, eval=FALSE}
+# First upload the marker data
+      geno<-readRDS(file="geno.rds")
+# Scale the marker data
+      Xs<-scale(geno, center = TRUE, scale = TRUE) 
+# Construct G matrix
+      G<-Xs%*%t(Xs)/ncol(Xs)
+      dim(G)
+```
+### **Step 1**: Second get Cholesky decomposition of G matrix
+```{r, eval=FALSE}
+  		chol.G<-chol(G)
+      Z0 <- diag(1, nrow = nrow(G), ncol = ncol(G))
+      Z<-Z0 %*% chol.G
+# Z0 is the identity matrix
+```
+      
+### **Step 3**: Create a function for HGLM analysis 
+**Description of the code:**
+
+* First we created a function so that we can use this function to run the hglm analysis for all the markers.
+* Six arguments are passed to the function including CT (representing column for particular trait in phenotypic data file, here named as phenos), i (representing markers), Phenos (representing phenotypic data file), X (representing marker matrix), Z(representing Z matrix), and X.disp (representing marker matrix for dispersion part).
+* Here we are modelling correlated random effects using Z matrix as random effect which is not possible in DGLM.
+* The basic syntax of HGLM model we are fitting  is as follows:
+```
+phenotype=marker_effect (fixed)+ Z (random) (modelling mean), marker_effect(modeling dispersion/varaibility)
+```
+* Finally we are extracting the variables including coefficients (beta), standard error (s.e), P.mean (p value for mean), P.disp (p value for dispersion) and assigning them to data frame 'out'
+```{r, eval=FALSE}
+# Run hglm model for all SNPs using for loop
+    	my.hglm <- function(cT,i,Phenos,Z,X,X.disp)
+   	 {
+      	y <- Phenos[,cT]
+      	y2 <<- Phenos[,cT]
+      	outm <-hglm(y=y, X= as.matrix(geno[,i]), Z=chol.G2,  X.disp =as.matrix(geno[,i]) , family = gaussian(link = log))
+      	estimates_fix<- outm$fixef 
+      	SE_Mean<- outm$SeFe 
+      	DF<- outm$dfReFe 
+      	DP_Mm<-outm$varFix 
+      	DP_RM<- outm$varRanef 
+      	estimates_rand<- outm$SummVC1[1] 
+      	S.E_rand<- outm$SummVC1[2] 
+      	out <- data.frame(estimates_fix=estimates_fix, SE_Mean = SE_Mean, DF = DF, 
+                        DP_Mm= DP_Mm,  DP_RM= DP_RM, estimates_rand=estimates_rand, S.E_rand=S.E_rand,
+                        stringsAsFactors=FALSE)
+      	return(out)
+    		}
+
+# Aanalysis for cadmium phenotype
+    		TF <- matrix(NA,nrow=dim(geno)[2],ncol=7)
+    
+    		for(i in 1:dim(geno)[2])
+    	{
+      		try(
+       		 {
+         	 outm <- my.hglm(cT=5,i=i,Phenos=pheno_data,Z=chol.G2,X=geno,X.disp=geno)
+         	 TF[i,] <- as.numeric(outm)
+          	print(i)
+       		 }, silent = TRUE)
+    		}
+# save the output
+  	write.csv(TF,file=paste('TF_',5,'CD_OKLOHOMA.csv',sep=''),row.names=FALSE)
+```
+
+### **Step 4**: Now build function to process the HGLM output and determine p-values
+**Description of the code:**
+```{r, eval=FALSE}
+# read the raw data file
+  		my.hglm1<-function(pheno, geno1, map1){
+# add the column names
+    		colnames(pheno)<-c("estimates_fix", "SE_Mean", "DF", 
+                       "DP_Mm","DP_RM", "estimates_rand", "S.E_rand")
+# add the marker name and position
+    		markernames<-data.frame(colnames(geno1))
+# Now combine the output file
+    		pheno <-cbind(markernames, pheno)
+# Now estimate the p-values for mean and dispersion part using library dplyr
+    		library(dplyr)
+    		pheno<-mutate(pheno,
+                  p.mean = 2*pt(-abs(estimates_fix/SE_Mean),df=1),
+                  p.disp = 2*pt(-abs(estimates_rand/S.E_rand),df=1)
+    				)
+# now remove the markers with NA values in the file
+    		pheno<- pheno %>% filter(!is.na(p.mean))
+    # match the markers between map file and outfile
+  colnames(pheno)<-c("marker", "estimates_fix", "SE_Mean", "DF", "DP_Mm", "DP_RM",
+                       "estimates_rand", "S.E_rand", "p.mean","p.disp")
+    		map<-map
+    # check the marker names is same in both files
+    # now combine the mapfile and outputfile
+    		pheno<-cbind(map, pheno)
+    # now select the appropriate columns for Manhattan plot
+    		pheno<-select(pheno, marker, chrom, pos, p.mean, p.disp) 
+  		}
+```
