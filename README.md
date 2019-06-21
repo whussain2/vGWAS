@@ -10,6 +10,7 @@ The output generated from DGLM and HGLM analysis and plot the circular Manhattan
 ![](www/figure1.jpg)
 
 [HTML](https:html/all.html)
+[HTML](https://htmlpreview.github.io/?https:https://github.com/whussain2/vGWAS/blob/master/html/all.html)
 
 
 
