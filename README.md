@@ -9,7 +9,7 @@ The raw data used to run the DGLM and HGLM analysis is available in Data folder 
 The output generated from DGLM and HGLM analysis and plot the circular Manhattan plot is available in folder vGWAS_output.
 ![](www/figure1.jpg)
 
-![HTML](https://github.com/whussain2/vGWAS/html/all.html)
+[HTML](https:html/all.html)
 
 
 
