@@ -1,5 +1,5 @@
 # General
-This repository  contains all the scripts and data used for the manuscript: "Variance-heterogeneity genome-wide mapping for cadmium in bread wheat revealed novel genomic loci and epistatic interactions".  Preprint is available at [will be available soon](soon). 
+This repository  contains all the scripts and data used for the manuscript: "Variance-heterogeneity genome-wide mapping for cadmium in bread wheat revealed novel genomic loci and epistatic interactions".  Preprint is available at [https://doi.org/10.1101/668087](https://doi.org/10.1101/668087). 
 ###### Aim: The main purpose of this work was to model the variance-heterogeneity in the context of GWAS, called as vGWAS to seek the genomic regions affecting the variance-heterogeneity of grain cadmium content in hard-red winter wheat.
 # Contents
 All the R codes for Principle component analysis, Double generalized linear model (DGLM), Hierarchical generalized linear model (HGLM), and figures for manuscript can be found in R_Markdown_files. 
