@@ -91,8 +91,13 @@ opts_knit$set(width=75)
 #save the pca data as r objective for future use
 saveRDS(pca_data, file="~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/results/outputs/
             PCA/pca_hww_299.rds")
-# Draw the plot
-    plot(pca_data$EV2, pca_data$EV1, xlab="PC1",  col="blue",ylab="PC2",
-      yaxt="n",font.lab = 2, col.axis="black", cex.axis=1, tck=-0.02)
+# Draw the PCA plot 
+# Here we will be using a saved daat file with grain color type information included.
+pca_data<-read.csv(file = "pca_data.csv", stringsAsFactors = FALSE)
+library(ggfortify)
+df <- pca_data[c(3, 4, 5, 6, 7)]
+autoplot(prcomp(df))
+autoplot(prcomp(df), data = pca_data, colour = 'Type')+
+theme_bw()
 ```
 
