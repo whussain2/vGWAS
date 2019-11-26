@@ -1,15 +1,26 @@
 # General
 This repository  contains all the scripts and data used for the manuscript: "Variance-heterogeneity genome-wide mapping for cadmium in bread wheat revealed novel genomic loci and epistatic interactions".  Preprint is available at [https://doi.org/10.1101/668087](https://doi.org/10.1101/668087). 
+
+***
+## Varaince-heterogeneity QTL 
+![](www/intro_fig.png)
+***
+
 ###### Aim: The main purpose of this work was to model the variance-heterogeneity in the context of GWAS, called as vGWAS to seek the genomic regions affecting the variance-heterogeneity of grain cadmium content in hard-red winter wheat.
-# Contents
-All the R codes for Principle component analysis, Double generalized linear model (DGLM), Hierarchical generalized linear model (HGLM), and figures for manuscript can be found in R_Markdown_files. 
+***
+# Content of the repository
+***
 
-The raw data used to run the DGLM and HGLM analysis is available in Data folder under Raw_Data.
+- Raw data files used in this study is given in Data folder.
+- Figures folder contain the all the figures generated for the manuscript.
+- html folder contains the html file containing all the R scripts.
+- R scripts are also given as .rmd files in rmd folder
 
-The output generated from DGLM and HGLM analysis and plot the circular Manhattan plot is available in folder vGWAS_output.
-![](www/figure1.jpg)
 
-- [R_Codes](https://htmlpreview.github.io/?https://github.com/whussain2/vGWAS/blob/master/html/all.html)
+- [R Scripts_HTML](https://htmlpreview.github.io/?https://github.com/whussain2/vGWAS/blob/master/html/all.html)
+- [.rmd](https://htmlpreview.github.io/?https://github.com/whussain2/vGWAS/blob/master/rmd_files/all.rmd)
+- [Multiple_testing_Scripts](https://htmlpreview.github.io/?https://github.com/whussain2/vGWAS/blob/master/rmd_files/multiple_testing.Rmd)
+
 
 
 
