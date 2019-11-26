@@ -11,10 +11,10 @@ This repository  contains all the scripts and data used for the manuscript: "Var
 # Content of the repository
 ***
 
-- Raw data files used in this study is given in Data folder.
-- Figures folder contain the all the figures generated for the manuscript.
-- html folder contains the html file containing all the R scripts.
-- R scripts are also given as .rmd files in rmd folder
+- Raw data files used in this study is given in **Data folder**.
+- All the figures generated are in the **Figures** folder.
+- **html** folder contains the html file containing all the R scripts.
+- R scripts are also given as ***.rmd*** files in rmd folder
 
 
 - [R Scripts_HTML](https://htmlpreview.github.io/?https://github.com/whussain2/vGWAS/blob/master/html/all.html)
