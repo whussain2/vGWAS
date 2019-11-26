@@ -18,7 +18,7 @@ This repository  contains all the scripts and data used for the manuscript: "Var
 
 
 - [R Scripts_HTML](https://htmlpreview.github.io/?https://github.com/whussain2/vGWAS/blob/master/html/all.html)
-- [.rmd](https://github.com/whussain2/vGWAS/blob/master/rmd_files/all.rmd)
+- [.rmd](https://github.com/whussain2/vGWAS/blob/master/rmd_files/all.Rmd)
 - [Multiple_testing_Scripts](https://github.com/whussain2/vGWAS/blob/master/rmd_files/multiple_testing.Rmd)
 
 
