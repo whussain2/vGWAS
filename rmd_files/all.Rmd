@@ -1,5 +1,5 @@
 ---
-title: "R Scripts to Model Varaince-heterogeneity"
+title: "R Scripts to Model Variance-heterogeneity"
 date: "`r Sys.Date()`"
 output:
   rmdformats::html_docco:
@@ -59,48 +59,75 @@ opts_knit$set(width=75)
 ```
 
 **Load the required libraries**
-```{r}
-      Packages <- c("dglm", "hglm", "gdata","readR","tidyr","ggplot",
-                    "qqman", "CMplot",  "dplyr", "ggplot2", "SNPRelate",
-                    "ggcorrplot", "statmod", "pheatmap")
-    lapply(Packages, library, character.only = TRUE)
 
+```{r}
+Packages <- c("dglm", "hglm", "gdata","readr","tidyr","ggthemes",
+                    "qqman", "CMplot",  "dplyr", "ggplot2", "SNPRelate",
+                    "ggcorrplot", "statmod", "pheatmap", "ggfortify")
+lapply(Packages, library, character.only = TRUE)
 ```
 **Note: Before showing the codes for DGLM and HGLM analysis, I will first begin with the principal component (PC) analysis of marker data and extract the top fours PCs which is required later for DGLM analysis to account for population structure**
 
-## **Principal component analysis (PCA)**
+***
+## **Principal Component Analysis (PCA)**
+***
+
 * In this section we will extract the PC in package SNPRelate using SNP marker data which latter will be used in DGLM analysis to account for population structure.
 
 ```{r}
-      
 # read the vcf file from the folder
-    vcf.hww <- "~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/Data_final/genotype.vcf"
+vcf.hww <- "~/Documents/GitHub/vGWAS/Data/Raw_data/genotype.vcf"
+
 # Reformat the data 
-    genofile<-snpgdsVCF2GDS(vcf.hww, "hww.gds", method="biallelic.only")
+genofile<-snpgdsVCF2GDS(vcf.hww, "hww.gds", method="biallelic.only")
+
 #Run PCA
-    geno_hww<- snpgdsOpen(genofile)
-    pca_hww1<- snpgdsPCA(geno_hww, num.thread=2)
+geno_hww<- snpgdsOpen(genofile)
+pca_hww1<- snpgdsPCA(geno_hww, num.thread=2)
+
 # variance proportion (%)
-    pc.percent <- pca_hww1$varprop*100
-    head(round(pc.percent, 2))
-## make a data.frame
-    pca_data<- data.frame(sample.id = pca_hww1$sample.id,
+pc.percent <- pca_hww1$varprop*100
+head(round(pc.percent, 2))
+
+# make a data.frame
+pca_data<- data.frame(sample.id = pca_hww1$sample.id,
                       EV1 = pca_hww1$eigenvect[,1],    # the first eigenvector
                       EV2 = pca_hww1$eigenvect[,2],    # the second eigenvector
                       EV3 = pca_hww1$eigenvect[,3],
                       EV4 = pca_hww1$eigenvect[,4],
                       EV5 = pca_hww1$eigenvect[,5],
                       stringsAsFactors = FALSE)
-    head(pca_data)
+head(pca_data)
+
 #save the pca data as r objective for future use
-saveRDS(pca_data, file="~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/results/outputs/
-            PCA/pca_hww_299.rds")
-# Draw the plot
-    plot(pca_data$EV2, pca_data$EV1, xlab="PC1",  col="blue",ylab="PC2",
-      yaxt="n",font.lab = 2, col.axis="black", cex.axis=1, tck=-0.02)
+saveRDS(pca_data, file="~/Documents/GitHub/vGWAS/Data/pca_data/pca_hww_299.rds")
 ```
-  
+***
+## **Population Structure of HWW panel**
+***
+
+* Here we will draw the population structure of Hard-winter wheat association panel (HWW) given in supplementary materials. 
+* First we will add the population information based on type of the grain.
+
+```{r}
+# First let us uplaod the information regarding type of wheat
+info<-read.csv(file="~/Documents/GitHub/vGWAS/Data/pca_data/information_wheat_type.csv",
+               header = TRUE)
+
+# merge with pca data file
+pca_data_final<-merge(pca_data, info, by="sample.id")
+
+# Draw the PCA plot 
+pca<- pca_data_final[c(2:7)]
+autoplot(prcomp(pca[,-6]))
+autoplot(prcomp(pca[,-6]), data = pca_data_final, colour = 'Type')+
+theme_bw()
+```
+
+***  
 ## **Double Generalized Linear Model (DGLM)**
+***
+
 * Here we will be presenting the codes to show how to model variance-heterogeneity using DGLM in the context of GWAS. 
 * As the analysis is computationally demanding and time consuming we performed this analysis on Holland Computing Center(HCC) server at University of Nebraska, Lincoln. 
 * Here we are just providing the snippet of codes and not showing any outputs.
@@ -108,11 +135,17 @@ saveRDS(pca_data, file="~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/results/outpu
 
 ```{r, eval=FALSE}
 # First we will be reading the marker data that is in rds formate and assign it to object geno
-      geno<-readRDS(file="geno.rds")
+  geno<-readRDS(file="~/Documents/GitHub/vGWAS/Data/Raw_data/geno.rds")
+
+# Loading map information file
+  map <- readRDS("~/Documents/GitHub/vGWAS/Data/Raw_data/map_final.rds")
+  map<-map[,c(1:2)]
+  
 # Read the cadmium data
-      pheno_data<- readRDS(file="pheno_ok2_final.rds")
+  pheno_data<- readRDS(file="~/Documents/GitHub/vGWAS/Data/Raw_data/pheno_ok2_final.rds")
+  
 # Read the principal components data and assign it to object covar
-    covar<-readRDS("pca_hww_299.rds")
+  covar<-readRDS("~/Documents/GitHub/vGWAS/Data/pca_data/pca_hww_299.rds")
 ```
 
 ### **Step 1**: Create a function for DGLM analysis 
@@ -139,6 +172,7 @@ phenotype=marker_effect+ covariates (modelling mean), marker_effect(modeling dis
       se <- s.model$coef[2,2] # Extract standard errors
       out <- data.frame(Beta=beta, SE = se,P.mean=P.mean, P.disp=P.disp, stringsAsFactors=FALSE) # Save all the extracted variables in data frame out
       return(out)
+      
       #print(i)
     }
 ```
@@ -157,13 +191,21 @@ phenotype=marker_effect+ covariates (modelling mean), marker_effect(modeling dis
     {
       try(
         {
-          outm <- my.pdglm(cT=1,i=i,Phenos=pheno_data,geno,covar)
+          outm <- my.pdglm(cT=5,i=i,Phenos=pheno_data,geno,covar)
           TF[i,] <- as.numeric(outm)
           print(i)
         }, silent=TRUE)
     }
+
+# Now add map information and select required columns for Manhattan plot
+row.names(TF)<-colnames(geno)
+colnames(TF) <- c("Beta", "SE", "P.mean", "P.disp")
+TF2<-merge(map, TF)
+TF2<-data.frame(merge(map,TF[,3:4],by="row.names",all.x=TRUE)) # add map info
+colnames(TF2)<-c("marker", "chrom", "pos", "p.mean","p.disp")
+
 # save the output in folder
-    write.csv(TF,file=paste('TF_',1,'CD_OKLOHOMA.csv',sep=''),
+write.csv(TF,file= "~/Documents/GitHub/vGWAS/Data/vGWAS_output/dglm_cd.csv",sep=',',
               row.names=FALSE)
 ```
 ## **Hierarchical Generalized Linear Model (HGLM)**
@@ -179,18 +221,20 @@ phenotype=marker_effect+ covariates (modelling mean), marker_effect(modeling dis
 #### First we construct G-matrix ( [VanRanden 2008](https://www-ncbi-nlm-nih-gov.libproxy.unl.edu/pubmed/18946147))
 ```{r, eval=FALSE}
 # First upload the marker data
-      geno<-readRDS(file="geno.rds")
+geno<-readRDS(file="~/Documents/GitHub/vGWAS/Data/Raw_data/geno.rds")
+
 # Scale the marker data
-      Xs<-scale(geno, center = TRUE, scale = TRUE) 
+Xs<-scale(geno, center = TRUE, scale = TRUE) 
+
 # Construct G matrix
-      G<-Xs%*%t(Xs)/ncol(Xs)
-      dim(G)
+G<-Xs%*%t(Xs)/ncol(Xs)
+dim(G)
 ```
 ### **Step 1**: Second get Cholesky decomposition of G matrix
 ```{r, eval=FALSE}
-  		chol.G<-chol(G)
-      Z0 <- diag(1, nrow = nrow(G), ncol = ncol(G))
-      Z<-Z0 %*% chol.G
+chol.G<-chol(G)
+Z0 <- diag(1, nrow = nrow(G), ncol = ncol(G))
+Z<-Z0 %*% chol.G
 # Z0 is the identity matrix
 ```
       
@@ -237,44 +281,65 @@ phenotype=marker_effect (fixed)+ Z (random) (modeling mean), marker_effect(model
           	print(i)
        		 }, silent = TRUE)
     		}
-# save the output
-  	write.csv(TF,file=paste('TF_',5,'CD_OKLOHOMA.csv',sep=''),row.names=FALSE)
 ```
 
 ### **Step 4**: Now build function to process the HGLM output and determine p-values
+
 **Description of the code:**
+
+* Here we will determine the p-values for mean and dispersion part.
+* Then we will add map information to the output file.
+* Add finally select appropriate columns for Manhattan plot
 ```{r, eval=FALSE}
 # read the raw data file
-  		my.hglm1<-function(pheno, geno1, map1){
+my.hglm1<-function(pheno, geno1, map1){
 # add the column names
-    		colnames(pheno)<-c("estimates_fix", "SE_Mean", "DF", 
+colnames(pheno)<-c("estimates_fix", "SE_Mean", "DF", 
                        "DP_Mm","DP_RM", "estimates_rand", "S.E_rand")
 # add the marker name and position
-    		markernames<-data.frame(colnames(geno1))
+markernames<-data.frame(colnames(geno1))
 # Now combine the output file
-    		pheno <-cbind(markernames, pheno)
+pheno <-cbind(markernames, pheno)
 # Now estimate the p-values for mean and dispersion part using library dplyr
-    		library(dplyr)
-    		pheno<-mutate(pheno,
+pheno<-mutate(pheno,
                   p.mean = 2*pt(-abs(estimates_fix/SE_Mean),df=1),
                   p.disp = 2*pt(-abs(estimates_rand/S.E_rand),df=1)
     				)
 # now remove the markers with NA values in the file
-    		pheno<- pheno %>% filter(!is.na(p.mean))
-    # match the markers between map file and outfile
-  colnames(pheno)<-c("marker", "estimates_fix", "SE_Mean", "DF", "DP_Mm", "DP_RM",
+pheno<- pheno %>% filter(!is.na(p.mean))
+# match the markers between map file and outfile
+colnames(pheno)<-c("marker", "estimates_fix", "SE_Mean", "DF", "DP_Mm", "DP_RM",
                        "estimates_rand", "S.E_rand", "p.mean","p.disp")
-    		map<-map
-    # check the marker names is same in both files
-    # now combine the mapfile and outputfile
+map<-map
+# now combine the mapfile and outputfile
     		pheno<-cbind(map, pheno)
-    # now select the appropriate columns for Manhattan plot
-    		pheno<-select(pheno, marker, chrom, pos, p.mean, p.disp) 
+# now select the appropriate columns for Manhattan plot
+pheno<-select(marker, chrom, pos, p.disp) 
+colnames(pheno)<-c("marker", "chrom", "pos", "P")
   		}
-```
-## **Circular Manhattan Plot**
 
-* Here we will draw the circular Manhattan plot using p-values including P.mean (equivalent to Traditional GWAS),  P.dispersion (obtained in DGLM analysis), and P.dispersion (obtained through HGLM analysis): Figure 1 in the manuscript.
+#Now use the function above to extract hglm output and save it. 
+# read the file obtained from hglm output
+hglm_CD<-TF
+
+# load marker data
+geno1<-(file="~/Documents/vGWAS/Data/Raw_data.rds")
+
+# now add the map info to the file for Manhattan plots
+map_final<-(file="~/Documents/vGWAS/Data/Raw_data/map_final.rds")
+
+# Now use the function
+hglm_CD_final<-my.hglm1(pheno= hglm_CD, geno1=geno1, map1 =map_final)
+
+# save the file in folder
+write.csv(hglm_CD_final, file="hglm_cd.csv", sep=',', row.names = FALSE)
+```
+
+***
+## **Manhattan Plot**
+***
+
+* Here we will draw the circular Manhattan plot using p-values including P.mean (equivalent to Traditional GWAS),  P.dispersion (obtained in DGLM analysis), and P.dispersion (obtained through HGLM analysis): Figure 2 in the manuscript.
 
 ### Load the GWAS, DGLM and HGLM outputs
 **Description of the code:**
@@ -284,7 +349,7 @@ phenotype=marker_effect (fixed)+ Z (random) (modeling mean), marker_effect(model
 * Combined the p-values from all the three files into one file and rename the columns
 ```{r}
 # First we will create a function to upload all the 3 csv files function
-      setwd("~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/data_manhattan_all")
+      setwd("~/Documents/GitHub/vGWAS/Data/vGWAS_output")
       import.all<-function(mypath,mypattern,...)
       {
         tmp.list.1<-list.files(mypath, pattern=mypattern)
@@ -295,105 +360,98 @@ phenotype=marker_effect (fixed)+ Z (random) (modeling mean), marker_effect(model
       }
       
 # Now upload the all the files
-  csv.import<-import.all("~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/data_manhattan_all", "csv$",sep=",")
-# here we define the separator of entries in the csv files to be comma.
-      gwas_cd<-csv.import$gwas_cd.csv
-      dglm_cd<-csv.import$dglm_cd.csv
-      hglm_cd<-csv.import$hglm_cd.csv
-  # subset the data
-      colnames(gwas_cd)<-c("marker", "chrom", "pos", "gwas_p")
-      dglm_cd<- dglm_cd[, c(1,5)]
-      colnames(dglm_cd)<-c("marker","dglm_p.disp")
-      hglm_cd<-hglm_cd[, c(1,4)]
-      colnames(hglm_cd)<-c("marker", "hglm_p.disp")
-# Now merge all the three data files
-      all_p<-Reduce(merge, list(gwas_cd, dglm_cd, hglm_cd))
-```
+csv.import<-import.all("~/Documents/GitHub/vGWAS/Data/vGWAS_output", "csv$",sep=",")
 
-### Draw the Linear Manhattan plot
-
-**Description of the code:**
-  
-  * Here we will load the data containing p.values for all the three including traditional GWAS, dglm and hglm analysis.
-* We will create function to upload all the CSV files
-* Combined the p-values from all the three files into one file and rename the columns
-```{r}
-# First we will create a function to upload all the 3 csv files function
-setwd("~/Dropbox/BoxUNL/Postdoc/data_analysis/Wheat_HWW_panel/vGWAS_output")
-import.all<-function(mypath,mypattern,...)
-{
-  tmp.list.1<-list.files(mypath, pattern=mypattern)
-  tmp.list.2<-list(length=length(tmp.list.1))
-  for (i in 1:length(tmp.list.1)){tmp.list.2[[i]]<-read.csv(tmp.list.1[i],...)}
-  names(tmp.list.2)<-tmp.list.1
-  tmp.list.2
-}
-
-# Now upload the all the files
-csv.import<-import.all("~/Dropbox/BoxUNL/Postdoc/data_analysis/Wheat_HWW_panel/vGWAS_output", "csv$",sep=",")
 # here we define the separator of entries in the csv files to be comma.
 gwas_cd<-csv.import$gwas_cd.csv
 dglm_cd<-csv.import$dglm_cd.csv
 hglm_cd<-csv.import$hglm_cd.csv
+
 # subset the data
 colnames(gwas_cd)<-c("marker", "chrom", "pos", "gwas_p")
 dglm_cd<- dglm_cd[, c(1,5)]
 colnames(dglm_cd)<-c("marker","dglm_p.disp")
 hglm_cd<-hglm_cd[, c(1,4)]
 colnames(hglm_cd)<-c("marker", "hglm_p.disp")
-# Now merge all the three data files
+
+#Now merge all the three data files
+
 all_p<-Reduce(merge, list(gwas_cd, dglm_cd, hglm_cd))
 ```
 
-### Draw the Linear Manhattan plot
+### Draw the Circular  Manhattan plot
 
-```{r}
-library(qqman)
-
-      my.manhattan<-function(data,chr, bp, p, snp){
-        manhattan(x = data, chr, bp, p, snp, suggestiveline=FALSE, genomewideline= -log10(1.266464e-05), chrlabs =c("1A", "1B", "1D", "2A", "2B", "2D","3A", "3B", "3D","4A", "4B", "4D","5A", "5B", "5D","6A", "6B", "6D", "7A", "7B", "7D", "UN"), col = c("blue", "orange", "skyblue", "darkred"), logp = TRUE, cex.lab=1.5, ylim=c(0,8), xlab="Chromosome", ylab="-log10(p)", cex.axis = 0.8, mgp=c(2,1,0))
-        
-      }
-      png(file="~/Dropbox/BoxUNL/Postdoc/data_analysis/Wheat_HWW_panel/vGWAS_output/Manhattan_plot_all.png", width=7, height =9, units = 'in',res=300)
-      par(mfrow=c(3,1))
-      my.manhattan(all_p, chr="chrom", bp="pos", p="gwas_p", snp="marker")
-      my.manhattan(all_p, chr="chrom", bp="pos", p="dglm_p.disp", snp="marker")
-      my.manhattan(all_p, chr="chrom", bp="pos", p="hglm_p.disp", snp="marker")
-      dev.off()
+```{r, eval=FALSE}
+setwd("~/Documents/GitHub/vGWAS/Figures")
+CMplot(all_p,plot.type="c",r=0.4, col=matrix(c("grey30","slategray", NA,"lightskyblue1","lightseagreen", NA, "thistle","pink", NA),3,3,byrow=T),
+         chr.labels=paste("",c("1A", "1B", "1D", "2A", "2B", "2D","3A", "3B", "3D","4A", "4B", "4D","5A", 
+    "5B", "5D","6A", "6B", "6D", "7A", "7B", "7D", "UN"),sep=""), cir.legend=TRUE,cir.legend.cex=0.8,
+         threshold=1e-5, outward=FALSE,amplify=TRUE,
+         threshold.lty=c(1,2), signal.line=1,signal.col="orangered",threshold.col="blue",
+         threshold.lwd=0.5, signal.cex=1.5,signal.pch=19, cir.chr.h=1.5,chr.den.col="black",file="jpg",memo="",dpi=300)
 ```
-## **Violin plots**
 
-* Here we are providing sample codes used ti draw the effective plots (Figure 2 in the manuscript) 
-```{r}
-ggplot(data_2a_final, aes(x=marker, y=avg1))+
+***
+## **Heat Map of Epistatic Interactions**
+***
+
+* Here we are providing the sample codes used to draw the heat map of epistasis between markers associated with variance-heterogeneity (Figure 3 of the manuscript).
+
+```{r, eval=FALSE}
+# Read the p-value data file
+epis_pvalues<-read.csv(file="~/Documents/GitHub/vGWAS/Data/Epistasis_output/epistasis_pvalues.csv",
+                       header=TRUE, row.names = 1)
+
+# Convert NA into zeros all the values into -log10
+epis_pvalues1<-as.matrix(epis_pvalues)
+epis_pvalues1<- -log10(epis_pvalues1)
+epis_pvalues1[is.na(epis_pvalues1)]<-0.00
+
+# Draw the heat map
+png(file="~/Documents/GitHub/vGWAS/Figures/epistasis_heatmap.png",
+    width=12, height =9, units = 'in',res=400)
+pheatmap(epis_pvalues1,  clustering_distance_rows = "correlation",clustering_distance_cols="correlation", scale = "none", legend_labels = "-log10(p-value", 
+         fontsize=13, angle_col = 45)
+dev.off()
+
+```
+
+***
+## **Violin plots**
+***
+
+* Here we are providing sample codes used to draw the violin plots to see differences in means and variances for grain cadmium concentration (Figure 4 of the manuscript).. 
+
+```{r, eval=FALSE}
+# showing for 2B chromsome
+data_2b_final<-read.csv(file="~/Documents/GitHub/vGWAS/Data/Raw_data/data_2b.csv",
+                        header = TRUE)
+ggplot(data_2b_final, aes(x=marker, y=avg1))+
   geom_violin(aes(fill = Genotype), trim = FALSE, position = position_dodge(0.9))+ 
   geom_hline(yintercept = 0.01309, color = "darkred", size =0.6,show.legend = TRUE,linetype = 2)+
   geom_boxplot(aes(fill = Genotype), width = 0.2, position = position_dodge(0.9))+
   scale_fill_manual(values = c("#00AFBB", "#E7B800"))+
-  #stat_summary(fun.y=mean, shape=8, geom="point",size=2, aes(group=genotype), 
-  #col="black") + #display mean as an asterisk
-  #geom_text(data=chr_b_means, aes(label=cd, x=marker,y=cd), 
-  #colour="black", size=3)
   labs(title = "", y="Cadmium conc. (mg/kg)", x="Markers")+
   theme_few() + #change background of the plot
-  theme(plot.title = element_text(color="black", face="bold",size=12, hjust=0.5))+
+  theme(plot.title = element_text(color="black",size=12, hjust=0.5))+
   theme(axis.text.x=element_text(colour='black', size=12)) + #asthetics of x-axis text
   theme(axis.text.y=element_text(colour='black', size=12)) + #asthetics of y-axis text
-  theme(axis.title.x = element_text(colour='black', size=12, vjust=0.0, face="bold")) + #asthetics of x-axis title
-  theme(axis.title.y = element_text(colour='black', size=12, face="bold"))+
-  theme(legend.title = element_text(colour="darkred", size=14, face="bold"),
-        legend.text = element_text(colour="grey0", size=11, face="bold"))+
+  theme(axis.title.x = element_text(colour='black', size=12, vjust=0.0)) + #asthetics of x-axis title
+  theme(axis.title.y = element_text(colour='black', size=12))+
+  theme(legend.title = element_text(colour="black", size=14),
+        legend.text = element_text(colour="grey0", size=11))+
   guides(fill=guide_legend(title="Genotype"))
 ```
 
-## **Heat map of epistasis and interaction effective plot**
+***
+## **Epistatic Interaction Effective Plot**
+***
 
-* Here we are providing the sample codes used to draw the heat map of epistasis between markers associated with varaince-heterogeneity (Figure 3 of the manuscript) and interaction effective plot (Figure 4 of the manuscript)
+* Here we are providing the sample codes used to draw interaction effective plot (Figure 5 of the manuscript)
 
-```{r}
+```{r, eval=FALSE}
 # Read the data file
-epis<-read.csv(file="~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/Epistasis/
-               Epistasis_output/epistasis_effectiveplot_DATA.csv", header=TRUE)
+epis<-read.csv(file="~/Documents/GitHub/vGWAS/Data/Raw_data/epistasis_effectiveplot_DATA.csv", header=TRUE)
 # Filter the two markers for interaction
 epis_filter<-epis%>%filter(marker==c("IAAV3067", "IWA7579"))
 # Create function for data summary
@@ -423,26 +481,11 @@ ggplot(epis_sum, aes(x=allele, y=phenotype, group=marker, color=marker)) +
   theme_classic()+
   theme(axis.text= element_text(color = "black", size = 12))+
   theme (plot.title = element_text(),
-         axis.title.y = element_text(color="black", size=12, face="bold")) +
+         axis.title.y = element_text(color="black", size=12)) +
   theme(legend.title = element_text(colour="black", size=14),
         legend.text = element_text(colour="black", size=12))+ # add and modify the legends
   guides(color=guide_legend(title=""))+
   theme(legend.position = c(0.15, 0.9))
-
-# Now draw the HEAT MAP
-
-epis_pvalues<-read.csv(file="~/Dropbox/BoxUNL/Postdoc/data_analysis/Wheat_HWW_panel/Manuscript_data/Epistasis_HM_MANUSCRIPT/epistasis_pvalues.csv",
-                       header=TRUE, row.names = 1)
-# Convert NA into zeros all the values into -log10
-epis_pvalues1<-as.matrix(epis_pvalues)
-epis_pvalues1<- -log10(epis_pvalues1)
-epis_pvalues1[is.na(epis_pvalues1)]<-0.00
-# Draw the heat map
-png(file="~/Dropbox/BoxUNL/Postdoc/data_analysis/Wheat_HWW_panel/Manuscript_data/Epistasis_HM_MANUSCRIPT/epistasis_heatmap.png",
-    width=12, height =9, units = 'in',res=400)
-pheatmap(epis_pvalues1,  clustering_distance_rows = "correlation",clustering_distance_cols="correlation", scale = "none", legend_labels = "-log10(p-value", 
-         fontsize=13, angle_col = 45)
-dev.off()
 
 ```
 

@@ -69,7 +69,7 @@ Below is the code for multiple testing:
 ### Effective number of tests(Meff)
 ```{r}
 # Read the orginal marker data used for DGLM and HGLM analysis
-      setwd("~/Box/Postdoc/Dataanalysis/Wheat_HWW_panel/Hcc_analysis")
+      setwd("~/Documents/GitHub/vGWAS/Data/Raw_data")
       geno<-readRDS(file="geno.rds")
       geno<-as.matrix(geno)
 # get correlation matrix
