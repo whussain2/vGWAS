@@ -121,7 +121,11 @@ pca_data_final<-merge(pca_data, info, by="sample.id")
 pca<- pca_data_final[c(2:7)]
 autoplot(prcomp(pca[,-6]))
 autoplot(prcomp(pca[,-6]), data = pca_data_final, colour = 'Type')+
-theme_bw()
+  xlab("PC1") + ylab("PC2") +
+  theme(text=element_text(size=20, family="Times"))+
+  geom_hline(yintercept = 0, linetype="dashed", color="black", size=0.5)+
+  geom_vline(xintercept = 0, linetype="dashed", color="black", size=0.5)+
+  theme_bw()
 ```
 
 ***  
@@ -409,9 +413,9 @@ epis_pvalues1[is.na(epis_pvalues1)]<-0.00
 
 # Draw the heat map
 png(file="~/Documents/GitHub/vGWAS/Figures/epistasis_heatmap.png",
-    width=12, height =9, units = 'in',res=400)
-pheatmap(epis_pvalues1,  clustering_distance_rows = "correlation",clustering_distance_cols="correlation", scale = "none", legend_labels = "-log10(p-value", 
-         fontsize=13, angle_col = 45)
+    width=12, height =9, units = 'in',res=600)
+plot<-pheatmap(epis_pvalues1, cluster_rows = F, cluster_cols = F,scale = "none", legend_labels = "-log10(p-value",fontsize=12, angle_col =90)
+plot
 dev.off()
 
 ```
@@ -442,51 +446,4 @@ ggplot(data_2b_final, aes(x=marker, y=avg1))+
         legend.text = element_text(colour="grey0", size=11))+
   guides(fill=guide_legend(title="Genotype"))
 ```
-
-***
-## **Epistatic Interaction Effective Plot**
-***
-
-* Here we are providing the sample codes used to draw interaction effective plot (Figure 5 of the manuscript)
-
-```{r, eval=FALSE}
-# Read the data file
-epis<-read.csv(file="~/Documents/GitHub/vGWAS/Data/Raw_data/epistasis_effectiveplot_DATA.csv", header=TRUE)
-# Filter the two markers for interaction
-epis_filter<-epis%>%filter(marker==c("IAAV3067", "IWA7579"))
-# Create function for data summary
-data_summary <- function(data, varname, groupnames){
-  require(plyr)
-  summary_func <- function(x, col){
-    c(mean = mean(x[[col]], na.rm=TRUE),
-      sd = sd(x[[col]], na.rm=TRUE))
-  }
-  data_sum<-ddply(data, groupnames, .fun=summary_func,
-                  varname)
-  data_sum <- rename(data_sum, c("mean" = varname))
-  return(data_sum)
-}
-epis_sum <- data_summary(epis_filter, varname="phenotype", 
-                    groupnames=c("marker", "allele"))
-epis_sum$phenotype<-round(epis_sum$phenotype, digits=3)
-epis_sum$sd<-round(epis_sum$sd, digits=3)
-# Drop Na
-epis_sum<-epis_sum%>%na.omit() 
-# Draw the effetive plot
-ggplot(epis_sum, aes(x=allele, y=phenotype, group=marker, color=marker)) +
-  geom_errorbar(aes(ymin=phenotype-sd, ymax=phenotype+sd), width=.1) +
-  geom_line() + geom_point()+
-  scale_color_manual(values=c("darkred", "blue"))+
-  labs(title="",x="", y = "Cadmium conc.(mg)")+
-  theme_classic()+
-  theme(axis.text= element_text(color = "black", size = 12))+
-  theme (plot.title = element_text(),
-         axis.title.y = element_text(color="black", size=12)) +
-  theme(legend.title = element_text(colour="black", size=14),
-        legend.text = element_text(colour="black", size=12))+ # add and modify the legends
-  guides(color=guide_legend(title=""))+
-  theme(legend.position = c(0.15, 0.9))
-
-```
-
 ##### ===================END===================
