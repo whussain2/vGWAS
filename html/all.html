@@ -9,7 +9,7 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="date" content="2019-11-26" />
+<meta name="date" content="2019-12-11" />
 
 <title>R Scripts to Model Variance-heterogeneity</title>
 
@@ -834,7 +834,7 @@ img {
 
 <div id="header">
 <h1 class="title">R Scripts to Model Variance-heterogeneity</h1>
-<h4 class="date"><em>2019-11-26</em></h4>
+<h4 class="date"><em>2019-12-11</em></h4>
 </div>
 
 <div id="TOC">
@@ -859,7 +859,6 @@ img {
 </ul></li>
 <li><a href="#heat-map-of-epistatic-interactions"><strong>Heat Map of Epistatic Interactions</strong></a></li>
 <li><a href="#violin-plots"><strong>Violin plots</strong></a></li>
-<li><a href="#epistatic-interaction-effective-plot"><strong>Epistatic Interaction Effective Plot</strong></a></li>
 </ul>
 </div>
 
@@ -895,9 +894,9 @@ h4 { /* Header 4 */
   }
   </style>
 <p><strong>Load the required libraries</strong></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>Packages &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;dglm&quot;</span>, <span class="st">&quot;hglm&quot;</span>, <span class="st">&quot;gdata&quot;</span>,<span class="st">&quot;readr&quot;</span>,<span class="st">&quot;tidyr&quot;</span>,<span class="st">&quot;ggthemes&quot;</span>,</span>
-<span id="cb1-2"><a href="#cb1-2"></a>                    <span class="st">&quot;qqman&quot;</span>, <span class="st">&quot;CMplot&quot;</span>,  <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;SNPRelate&quot;</span>,</span>
-<span id="cb1-3"><a href="#cb1-3"></a>                    <span class="st">&quot;ggcorrplot&quot;</span>, <span class="st">&quot;statmod&quot;</span>, <span class="st">&quot;pheatmap&quot;</span>, <span class="st">&quot;ggfortify&quot;</span>)</span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a>Packages &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;dglm&quot;</span>, <span class="st">&quot;hglm&quot;</span>, <span class="st">&quot;gdata&quot;</span>, <span class="st">&quot;readr&quot;</span>, <span class="st">&quot;tidyr&quot;</span>, <span class="st">&quot;ggthemes&quot;</span>, <span class="st">&quot;qqman&quot;</span>, </span>
+<span id="cb1-2"><a href="#cb1-2"></a>    <span class="st">&quot;CMplot&quot;</span>, <span class="st">&quot;dplyr&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;SNPRelate&quot;</span>, <span class="st">&quot;ggcorrplot&quot;</span>, <span class="st">&quot;statmod&quot;</span>, <span class="st">&quot;pheatmap&quot;</span>, </span>
+<span id="cb1-3"><a href="#cb1-3"></a>    <span class="st">&quot;ggfortify&quot;</span>)</span>
 <span id="cb1-4"><a href="#cb1-4"></a><span class="kw">lapply</span>(Packages, library, <span class="dt">character.only =</span> <span class="ot">TRUE</span>)</span></code></pre></div>
 <p><strong>Note: Before showing the codes for DGLM and HGLM analysis, I will first begin with the principal component (PC) analysis of marker data and extract the top fours PCs which is required later for DGLM analysis to account for population structure</strong></p>
 <hr />
@@ -943,17 +942,20 @@ h4 { /* Header 4 */
 <li>First we will add the population information based on type of the grain.</li>
 </ul>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="co"># First let us uplaod the information regarding type of wheat</span></span>
-<span id="cb3-2"><a href="#cb3-2"></a>info&lt;-<span class="kw">read.csv</span>(<span class="dt">file=</span><span class="st">&quot;~/Documents/GitHub/vGWAS/Data/pca_data/information_wheat_type.csv&quot;</span>,</span>
-<span id="cb3-3"><a href="#cb3-3"></a>               <span class="dt">header =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb3-2"><a href="#cb3-2"></a>info &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Data/pca_data/information_wheat_type.csv&quot;</span>, </span>
+<span id="cb3-3"><a href="#cb3-3"></a>    <span class="dt">header =</span> <span class="ot">TRUE</span>)</span>
 <span id="cb3-4"><a href="#cb3-4"></a></span>
 <span id="cb3-5"><a href="#cb3-5"></a><span class="co"># merge with pca data file</span></span>
-<span id="cb3-6"><a href="#cb3-6"></a>pca_data_final&lt;-<span class="kw">merge</span>(pca_data, info, <span class="dt">by=</span><span class="st">&quot;sample.id&quot;</span>)</span>
+<span id="cb3-6"><a href="#cb3-6"></a>pca_data_final &lt;-<span class="st"> </span><span class="kw">merge</span>(pca_data, info, <span class="dt">by =</span> <span class="st">&quot;sample.id&quot;</span>)</span>
 <span id="cb3-7"><a href="#cb3-7"></a></span>
-<span id="cb3-8"><a href="#cb3-8"></a><span class="co"># Draw the PCA plot </span></span>
-<span id="cb3-9"><a href="#cb3-9"></a>pca&lt;-<span class="st"> </span>pca_data_final[<span class="kw">c</span>(<span class="dv">2</span><span class="op">:</span><span class="dv">7</span>)]</span>
-<span id="cb3-10"><a href="#cb3-10"></a><span class="kw">autoplot</span>(<span class="kw">prcomp</span>(pca[,<span class="op">-</span><span class="dv">6</span>]))</span>
-<span id="cb3-11"><a href="#cb3-11"></a><span class="kw">autoplot</span>(<span class="kw">prcomp</span>(pca[,<span class="op">-</span><span class="dv">6</span>]), <span class="dt">data =</span> pca_data_final, <span class="dt">colour =</span> <span class="st">&#39;Type&#39;</span>)<span class="op">+</span></span>
-<span id="cb3-12"><a href="#cb3-12"></a><span class="kw">theme_bw</span>()</span></code></pre></div>
+<span id="cb3-8"><a href="#cb3-8"></a><span class="co"># Draw the PCA plot</span></span>
+<span id="cb3-9"><a href="#cb3-9"></a>pca &lt;-<span class="st"> </span>pca_data_final[<span class="kw">c</span>(<span class="dv">2</span><span class="op">:</span><span class="dv">7</span>)]</span>
+<span id="cb3-10"><a href="#cb3-10"></a><span class="kw">autoplot</span>(<span class="kw">prcomp</span>(pca[, <span class="dv">-6</span>]))</span>
+<span id="cb3-11"><a href="#cb3-11"></a><span class="kw">autoplot</span>(<span class="kw">prcomp</span>(pca[, <span class="dv">-6</span>]), <span class="dt">data =</span> pca_data_final, <span class="dt">colour =</span> <span class="st">&quot;Type&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="kw">xlab</span>(<span class="st">&quot;PC1&quot;</span>) <span class="op">+</span><span class="st"> </span></span>
+<span id="cb3-12"><a href="#cb3-12"></a><span class="st">    </span><span class="kw">ylab</span>(<span class="st">&quot;PC2&quot;</span>) <span class="op">+</span><span class="st"> </span><span class="kw">theme</span>(<span class="dt">text =</span> <span class="kw">element_text</span>(<span class="dt">size =</span> <span class="dv">20</span>, <span class="dt">family =</span> <span class="st">&quot;Times&quot;</span>)) <span class="op">+</span><span class="st"> </span></span>
+<span id="cb3-13"><a href="#cb3-13"></a><span class="st">    </span><span class="kw">geom_hline</span>(<span class="dt">yintercept =</span> <span class="dv">0</span>, <span class="dt">linetype =</span> <span class="st">&quot;dashed&quot;</span>, <span class="dt">color =</span> <span class="st">&quot;black&quot;</span>, <span class="dt">size =</span> <span class="fl">0.5</span>) <span class="op">+</span><span class="st"> </span></span>
+<span id="cb3-14"><a href="#cb3-14"></a><span class="st">    </span><span class="kw">geom_vline</span>(<span class="dt">xintercept =</span> <span class="dv">0</span>, <span class="dt">linetype =</span> <span class="st">&quot;dashed&quot;</span>, <span class="dt">color =</span> <span class="st">&quot;black&quot;</span>, <span class="dt">size =</span> <span class="fl">0.5</span>) <span class="op">+</span><span class="st"> </span></span>
+<span id="cb3-15"><a href="#cb3-15"></a><span class="st">    </span><span class="kw">theme_bw</span>()</span></code></pre></div>
 <hr />
 </div>
 <div id="double-generalized-linear-model-dglm" class="section level2">
@@ -964,18 +966,19 @@ h4 { /* Header 4 */
 <li>As the analysis is computationally demanding and time consuming we performed this analysis on Holland Computing Center(HCC) server at University of Nebraska, Lincoln.</li>
 <li>Here we are just providing the snippet of codes and not showing any outputs. ## Read the marker and phenotypic, and principal components</li>
 </ul>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># First we will be reading the marker data that is in rds formate and assign it to object geno</span></span>
-<span id="cb4-2"><a href="#cb4-2"></a>  geno&lt;-<span class="kw">readRDS</span>(<span class="dt">file=</span><span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/geno.rds&quot;</span>)</span>
-<span id="cb4-3"><a href="#cb4-3"></a></span>
-<span id="cb4-4"><a href="#cb4-4"></a><span class="co"># Loading map information file</span></span>
-<span id="cb4-5"><a href="#cb4-5"></a>  map &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/map_final.rds&quot;</span>)</span>
-<span id="cb4-6"><a href="#cb4-6"></a>  map&lt;-map[,<span class="kw">c</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>)]</span>
-<span id="cb4-7"><a href="#cb4-7"></a>  </span>
-<span id="cb4-8"><a href="#cb4-8"></a><span class="co"># Read the cadmium data</span></span>
-<span id="cb4-9"><a href="#cb4-9"></a>  pheno_data&lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="dt">file=</span><span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/pheno_ok2_final.rds&quot;</span>)</span>
-<span id="cb4-10"><a href="#cb4-10"></a>  </span>
-<span id="cb4-11"><a href="#cb4-11"></a><span class="co"># Read the principal components data and assign it to object covar</span></span>
-<span id="cb4-12"><a href="#cb4-12"></a>  covar&lt;-<span class="kw">readRDS</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/pca_data/pca_hww_299.rds&quot;</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a><span class="co"># First we will be reading the marker data that is in rds formate and assign</span></span>
+<span id="cb4-2"><a href="#cb4-2"></a><span class="co"># it to object geno</span></span>
+<span id="cb4-3"><a href="#cb4-3"></a>geno &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/geno.rds&quot;</span>)</span>
+<span id="cb4-4"><a href="#cb4-4"></a></span>
+<span id="cb4-5"><a href="#cb4-5"></a><span class="co"># Loading map information file</span></span>
+<span id="cb4-6"><a href="#cb4-6"></a>map &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/map_final.rds&quot;</span>)</span>
+<span id="cb4-7"><a href="#cb4-7"></a>map &lt;-<span class="st"> </span>map[, <span class="kw">c</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>)]</span>
+<span id="cb4-8"><a href="#cb4-8"></a></span>
+<span id="cb4-9"><a href="#cb4-9"></a><span class="co"># Read the cadmium data</span></span>
+<span id="cb4-10"><a href="#cb4-10"></a>pheno_data &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/pheno_ok2_final.rds&quot;</span>)</span>
+<span id="cb4-11"><a href="#cb4-11"></a></span>
+<span id="cb4-12"><a href="#cb4-12"></a><span class="co"># Read the principal components data and assign it to object covar</span></span>
+<span id="cb4-13"><a href="#cb4-13"></a>covar &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/pca_data/pca_hww_299.rds&quot;</span>)</span></code></pre></div>
 <div id="step-1-create-a-function-for-dglm-analysis" class="section level3">
 <h3><strong>Step 1</strong>: Create a function for DGLM analysis</h3>
 <p><strong>Description of the code:</strong></p>
@@ -989,21 +992,21 @@ h4 { /* Header 4 */
 <ul>
 <li>Finally we are extracting the variables including coefficients (beta), standard error (s.e), P.mean (p-value for mean), P.disp (p-value for dispersion) and assigning them to data frame ‘out’</li>
 </ul>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>    my.pdglm &lt;-<span class="st"> </span><span class="cf">function</span>(cT,i,Phenos,geno,covar)</span>
-<span id="cb6-2"><a href="#cb6-2"></a>    {</span>
-<span id="cb6-3"><a href="#cb6-3"></a>      y &lt;-<span class="st"> </span>Phenos[,cT]</span>
-<span id="cb6-4"><a href="#cb6-4"></a>      model &lt;-<span class="st"> </span><span class="kw">dglm</span>(y <span class="op">~</span><span class="st"> </span>geno[,i] <span class="op">+</span><span class="st"> </span>covar[,<span class="dv">2</span>] <span class="op">+</span><span class="st"> </span>covar[, <span class="dv">3</span>] <span class="op">+</span><span class="st"> </span>covar[, <span class="dv">4</span>] <span class="op">+</span><span class="st"> </span>covar[, <span class="dv">5</span>],</span>
-<span id="cb6-5"><a href="#cb6-5"></a>                    <span class="op">~</span><span class="st"> </span>geno[,i], <span class="dt">family =</span> <span class="kw">gaussian</span>(<span class="dt">link =</span> identity))</span>
-<span id="cb6-6"><a href="#cb6-6"></a>      P.mean &lt;-<span class="st"> </span><span class="kw">summary</span>(model)<span class="op">$</span>coef[<span class="dv">2</span>,<span class="dv">4</span>] <span class="co"># Extarct p values for mean part</span></span>
-<span id="cb6-7"><a href="#cb6-7"></a>      P.disp &lt;-<span class="st"> </span><span class="kw">anova</span>(model)<span class="op">$</span>Adj.P[<span class="dv">2</span>] <span class="co"># Extract P values for dispersion part</span></span>
-<span id="cb6-8"><a href="#cb6-8"></a>      s.model &lt;-<span class="st"> </span><span class="kw">summary</span>(model<span class="op">$</span>dispersion.fit)</span>
-<span id="cb6-9"><a href="#cb6-9"></a>      beta &lt;-<span class="st"> </span>s.model<span class="op">$</span>coef[<span class="dv">2</span>,<span class="dv">1</span>] <span class="co"># Extarct cofficients</span></span>
-<span id="cb6-10"><a href="#cb6-10"></a>      se &lt;-<span class="st"> </span>s.model<span class="op">$</span>coef[<span class="dv">2</span>,<span class="dv">2</span>] <span class="co"># Extract standard errors</span></span>
-<span id="cb6-11"><a href="#cb6-11"></a>      out &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">Beta=</span>beta, <span class="dt">SE =</span> se,<span class="dt">P.mean=</span>P.mean, <span class="dt">P.disp=</span>P.disp, <span class="dt">stringsAsFactors=</span><span class="ot">FALSE</span>) <span class="co"># Save all the extracted variables in data frame out</span></span>
-<span id="cb6-12"><a href="#cb6-12"></a>      <span class="kw">return</span>(out)</span>
-<span id="cb6-13"><a href="#cb6-13"></a>      </span>
-<span id="cb6-14"><a href="#cb6-14"></a>      <span class="co">#print(i)</span></span>
-<span id="cb6-15"><a href="#cb6-15"></a>    }</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a>my.pdglm &lt;-<span class="st"> </span><span class="cf">function</span>(cT, i, Phenos, geno, covar) {</span>
+<span id="cb6-2"><a href="#cb6-2"></a>    y &lt;-<span class="st"> </span>Phenos[, cT]</span>
+<span id="cb6-3"><a href="#cb6-3"></a>    model &lt;-<span class="st"> </span><span class="kw">dglm</span>(y <span class="op">~</span><span class="st"> </span>geno[, i] <span class="op">+</span><span class="st"> </span>covar[, <span class="dv">2</span>] <span class="op">+</span><span class="st"> </span>covar[, <span class="dv">3</span>] <span class="op">+</span><span class="st"> </span>covar[, <span class="dv">4</span>] <span class="op">+</span><span class="st"> </span>covar[, </span>
+<span id="cb6-4"><a href="#cb6-4"></a>        <span class="dv">5</span>], <span class="op">~</span>geno[, i], <span class="dt">family =</span> <span class="kw">gaussian</span>(<span class="dt">link =</span> identity))</span>
+<span id="cb6-5"><a href="#cb6-5"></a>    P.mean &lt;-<span class="st"> </span><span class="kw">summary</span>(model)<span class="op">$</span>coef[<span class="dv">2</span>, <span class="dv">4</span>]  <span class="co"># Extarct p values for mean part</span></span>
+<span id="cb6-6"><a href="#cb6-6"></a>    P.disp &lt;-<span class="st"> </span><span class="kw">anova</span>(model)<span class="op">$</span>Adj.P[<span class="dv">2</span>]  <span class="co"># Extract P values for dispersion part</span></span>
+<span id="cb6-7"><a href="#cb6-7"></a>    s.model &lt;-<span class="st"> </span><span class="kw">summary</span>(model<span class="op">$</span>dispersion.fit)</span>
+<span id="cb6-8"><a href="#cb6-8"></a>    beta &lt;-<span class="st"> </span>s.model<span class="op">$</span>coef[<span class="dv">2</span>, <span class="dv">1</span>]  <span class="co"># Extarct cofficients</span></span>
+<span id="cb6-9"><a href="#cb6-9"></a>    se &lt;-<span class="st"> </span>s.model<span class="op">$</span>coef[<span class="dv">2</span>, <span class="dv">2</span>]  <span class="co"># Extract standard errors</span></span>
+<span id="cb6-10"><a href="#cb6-10"></a>    out &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">Beta =</span> beta, <span class="dt">SE =</span> se, <span class="dt">P.mean =</span> P.mean, <span class="dt">P.disp =</span> P.disp, </span>
+<span id="cb6-11"><a href="#cb6-11"></a>        <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>)  <span class="co"># Save all the extracted variables in data frame out</span></span>
+<span id="cb6-12"><a href="#cb6-12"></a>    <span class="kw">return</span>(out)</span>
+<span id="cb6-13"><a href="#cb6-13"></a>    </span>
+<span id="cb6-14"><a href="#cb6-14"></a>    <span class="co"># print(i)</span></span>
+<span id="cb6-15"><a href="#cb6-15"></a>}</span></code></pre></div>
 </div>
 <div id="step-2-use-the-for-loop-to-run-function" class="section level3">
 <h3><strong>Step 2</strong>: Use the for-loop to run function</h3>
@@ -1014,27 +1017,25 @@ h4 { /* Header 4 */
 <li>We are using function <em>try()</em> to continue the loop if error is encountered as some of the markers do not converge.</li>
 <li>Finally we are saving the output as csv file.</li>
 </ul>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>    TF &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA</span>,<span class="dt">nrow=</span><span class="kw">dim</span>(geno)[<span class="dv">2</span>],<span class="dt">ncol=</span><span class="dv">4</span>)</span>
-<span id="cb7-2"><a href="#cb7-2"></a>    <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">dim</span>(geno)[<span class="dv">2</span>])</span>
-<span id="cb7-3"><a href="#cb7-3"></a>    {</span>
-<span id="cb7-4"><a href="#cb7-4"></a>      <span class="kw">try</span>(</span>
-<span id="cb7-5"><a href="#cb7-5"></a>        {</span>
-<span id="cb7-6"><a href="#cb7-6"></a>          outm &lt;-<span class="st"> </span><span class="kw">my.pdglm</span>(<span class="dt">cT=</span><span class="dv">5</span>,<span class="dt">i=</span>i,<span class="dt">Phenos=</span>pheno_data,geno,covar)</span>
-<span id="cb7-7"><a href="#cb7-7"></a>          TF[i,] &lt;-<span class="st"> </span><span class="kw">as.numeric</span>(outm)</span>
-<span id="cb7-8"><a href="#cb7-8"></a>          <span class="kw">print</span>(i)</span>
-<span id="cb7-9"><a href="#cb7-9"></a>        }, <span class="dt">silent=</span><span class="ot">TRUE</span>)</span>
-<span id="cb7-10"><a href="#cb7-10"></a>    }</span>
-<span id="cb7-11"><a href="#cb7-11"></a></span>
-<span id="cb7-12"><a href="#cb7-12"></a><span class="co"># Now add map information and select required columns for Manhattan plot</span></span>
-<span id="cb7-13"><a href="#cb7-13"></a><span class="kw">row.names</span>(TF)&lt;-<span class="kw">colnames</span>(geno)</span>
-<span id="cb7-14"><a href="#cb7-14"></a><span class="kw">colnames</span>(TF) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Beta&quot;</span>, <span class="st">&quot;SE&quot;</span>, <span class="st">&quot;P.mean&quot;</span>, <span class="st">&quot;P.disp&quot;</span>)</span>
-<span id="cb7-15"><a href="#cb7-15"></a>TF2&lt;-<span class="kw">merge</span>(map, TF)</span>
-<span id="cb7-16"><a href="#cb7-16"></a>TF2&lt;-<span class="kw">data.frame</span>(<span class="kw">merge</span>(map,TF[,<span class="dv">3</span><span class="op">:</span><span class="dv">4</span>],<span class="dt">by=</span><span class="st">&quot;row.names&quot;</span>,<span class="dt">all.x=</span><span class="ot">TRUE</span>)) <span class="co"># add map info</span></span>
-<span id="cb7-17"><a href="#cb7-17"></a><span class="kw">colnames</span>(TF2)&lt;-<span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;chrom&quot;</span>, <span class="st">&quot;pos&quot;</span>, <span class="st">&quot;p.mean&quot;</span>,<span class="st">&quot;p.disp&quot;</span>)</span>
-<span id="cb7-18"><a href="#cb7-18"></a></span>
-<span id="cb7-19"><a href="#cb7-19"></a><span class="co"># save the output in folder</span></span>
-<span id="cb7-20"><a href="#cb7-20"></a><span class="kw">write.csv</span>(TF,<span class="dt">file=</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Data/vGWAS_output/dglm_cd.csv&quot;</span>,<span class="dt">sep=</span><span class="st">&#39;,&#39;</span>,</span>
-<span id="cb7-21"><a href="#cb7-21"></a>              <span class="dt">row.names=</span><span class="ot">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>TF &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA</span>, <span class="dt">nrow =</span> <span class="kw">dim</span>(geno)[<span class="dv">2</span>], <span class="dt">ncol =</span> <span class="dv">4</span>)</span>
+<span id="cb7-2"><a href="#cb7-2"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">dim</span>(geno)[<span class="dv">2</span>]) {</span>
+<span id="cb7-3"><a href="#cb7-3"></a>    <span class="kw">try</span>({</span>
+<span id="cb7-4"><a href="#cb7-4"></a>        outm &lt;-<span class="st"> </span><span class="kw">my.pdglm</span>(<span class="dt">cT =</span> <span class="dv">5</span>, <span class="dt">i =</span> i, <span class="dt">Phenos =</span> pheno_data, geno, covar)</span>
+<span id="cb7-5"><a href="#cb7-5"></a>        TF[i, ] &lt;-<span class="st"> </span><span class="kw">as.numeric</span>(outm)</span>
+<span id="cb7-6"><a href="#cb7-6"></a>        <span class="kw">print</span>(i)</span>
+<span id="cb7-7"><a href="#cb7-7"></a>    }, <span class="dt">silent =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb7-8"><a href="#cb7-8"></a>}</span>
+<span id="cb7-9"><a href="#cb7-9"></a></span>
+<span id="cb7-10"><a href="#cb7-10"></a><span class="co"># Now add map information and select required columns for Manhattan plot</span></span>
+<span id="cb7-11"><a href="#cb7-11"></a><span class="kw">row.names</span>(TF) &lt;-<span class="st"> </span><span class="kw">colnames</span>(geno)</span>
+<span id="cb7-12"><a href="#cb7-12"></a><span class="kw">colnames</span>(TF) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Beta&quot;</span>, <span class="st">&quot;SE&quot;</span>, <span class="st">&quot;P.mean&quot;</span>, <span class="st">&quot;P.disp&quot;</span>)</span>
+<span id="cb7-13"><a href="#cb7-13"></a>TF2 &lt;-<span class="st"> </span><span class="kw">merge</span>(map, TF)</span>
+<span id="cb7-14"><a href="#cb7-14"></a>TF2 &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">merge</span>(map, TF[, <span class="dv">3</span><span class="op">:</span><span class="dv">4</span>], <span class="dt">by =</span> <span class="st">&quot;row.names&quot;</span>, <span class="dt">all.x =</span> <span class="ot">TRUE</span>))  <span class="co"># add map info</span></span>
+<span id="cb7-15"><a href="#cb7-15"></a><span class="kw">colnames</span>(TF2) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;chrom&quot;</span>, <span class="st">&quot;pos&quot;</span>, <span class="st">&quot;p.mean&quot;</span>, <span class="st">&quot;p.disp&quot;</span>)</span>
+<span id="cb7-16"><a href="#cb7-16"></a></span>
+<span id="cb7-17"><a href="#cb7-17"></a><span class="co"># save the output in folder</span></span>
+<span id="cb7-18"><a href="#cb7-18"></a><span class="kw">write.csv</span>(TF, <span class="dt">file =</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Data/vGWAS_output/dglm_cd.csv&quot;</span>, </span>
+<span id="cb7-19"><a href="#cb7-19"></a>    <span class="dt">sep =</span> <span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> <span class="ot">FALSE</span>)</span></code></pre></div>
 </div>
 </div>
 <div id="hierarchical-generalized-linear-model-hglm" class="section level2">
@@ -1051,21 +1052,21 @@ h4 { /* Header 4 */
 <div id="first-we-construct-g-matrix-vanranden-2008" class="section level4">
 <h4>First we construct G-matrix ( <a href="https://www-ncbi-nlm-nih-gov.libproxy.unl.edu/pubmed/18946147">VanRanden 2008</a>)</h4>
 <div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a><span class="co"># First upload the marker data</span></span>
-<span id="cb8-2"><a href="#cb8-2"></a>geno&lt;-<span class="kw">readRDS</span>(<span class="dt">file=</span><span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/geno.rds&quot;</span>)</span>
+<span id="cb8-2"><a href="#cb8-2"></a>geno &lt;-<span class="st"> </span><span class="kw">readRDS</span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/geno.rds&quot;</span>)</span>
 <span id="cb8-3"><a href="#cb8-3"></a></span>
 <span id="cb8-4"><a href="#cb8-4"></a><span class="co"># Scale the marker data</span></span>
-<span id="cb8-5"><a href="#cb8-5"></a>Xs&lt;-<span class="kw">scale</span>(geno, <span class="dt">center =</span> <span class="ot">TRUE</span>, <span class="dt">scale =</span> <span class="ot">TRUE</span>) </span>
+<span id="cb8-5"><a href="#cb8-5"></a>Xs &lt;-<span class="st"> </span><span class="kw">scale</span>(geno, <span class="dt">center =</span> <span class="ot">TRUE</span>, <span class="dt">scale =</span> <span class="ot">TRUE</span>)</span>
 <span id="cb8-6"><a href="#cb8-6"></a></span>
 <span id="cb8-7"><a href="#cb8-7"></a><span class="co"># Construct G matrix</span></span>
-<span id="cb8-8"><a href="#cb8-8"></a>G&lt;-Xs<span class="op">%*%</span><span class="kw">t</span>(Xs)<span class="op">/</span><span class="kw">ncol</span>(Xs)</span>
+<span id="cb8-8"><a href="#cb8-8"></a>G &lt;-<span class="st"> </span>Xs <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(Xs)<span class="op">/</span><span class="kw">ncol</span>(Xs)</span>
 <span id="cb8-9"><a href="#cb8-9"></a><span class="kw">dim</span>(G)</span></code></pre></div>
 </div>
 </div>
 <div id="step-1-second-get-cholesky-decomposition-of-g-matrix" class="section level3">
 <h3><strong>Step 1</strong>: Second get Cholesky decomposition of G matrix</h3>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>chol.G&lt;-<span class="kw">chol</span>(G)</span>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>chol.G &lt;-<span class="st"> </span><span class="kw">chol</span>(G)</span>
 <span id="cb9-2"><a href="#cb9-2"></a>Z0 &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="dv">1</span>, <span class="dt">nrow =</span> <span class="kw">nrow</span>(G), <span class="dt">ncol =</span> <span class="kw">ncol</span>(G))</span>
-<span id="cb9-3"><a href="#cb9-3"></a>Z&lt;-Z0 <span class="op">%*%</span><span class="st"> </span>chol.G</span>
+<span id="cb9-3"><a href="#cb9-3"></a>Z &lt;-<span class="st"> </span>Z0 <span class="op">%*%</span><span class="st"> </span>chol.G</span>
 <span id="cb9-4"><a href="#cb9-4"></a><span class="co"># Z0 is the identity matrix</span></span></code></pre></div>
 </div>
 <div id="step-3-create-a-function-for-hglm-analysis" class="section level3">
@@ -1082,36 +1083,35 @@ h4 { /* Header 4 */
 <li>Finally we are extracting the variables including coefficients (beta), standard error (s.e), P.mean (p value for mean), P.disp (p value for dispersion) and assigning them to data frame ‘out’</li>
 </ul>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="co"># Run hglm model for all SNPs using for loop</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a>        my.hglm &lt;-<span class="st"> </span><span class="cf">function</span>(cT,i,Phenos,Z,X,X.disp)</span>
-<span id="cb11-3"><a href="#cb11-3"></a>     {</span>
-<span id="cb11-4"><a href="#cb11-4"></a>        y &lt;-<span class="st"> </span>Phenos[,cT]</span>
-<span id="cb11-5"><a href="#cb11-5"></a>        y2 &lt;&lt;-<span class="st"> </span>Phenos[,cT]</span>
-<span id="cb11-6"><a href="#cb11-6"></a>        outm &lt;-<span class="kw">hglm</span>(<span class="dt">y=</span>y, <span class="dt">X=</span> <span class="kw">as.matrix</span>(geno[,i]), <span class="dt">Z=</span>chol.G2,  <span class="dt">X.disp =</span><span class="kw">as.matrix</span>(geno[,i]) , <span class="dt">family =</span> <span class="kw">gaussian</span>(<span class="dt">link =</span> log))</span>
-<span id="cb11-7"><a href="#cb11-7"></a>        estimates_fix&lt;-<span class="st"> </span>outm<span class="op">$</span>fixef </span>
-<span id="cb11-8"><a href="#cb11-8"></a>        SE_Mean&lt;-<span class="st"> </span>outm<span class="op">$</span>SeFe </span>
-<span id="cb11-9"><a href="#cb11-9"></a>        DF&lt;-<span class="st"> </span>outm<span class="op">$</span>dfReFe </span>
-<span id="cb11-10"><a href="#cb11-10"></a>        DP_Mm&lt;-outm<span class="op">$</span>varFix </span>
-<span id="cb11-11"><a href="#cb11-11"></a>        DP_RM&lt;-<span class="st"> </span>outm<span class="op">$</span>varRanef </span>
-<span id="cb11-12"><a href="#cb11-12"></a>        estimates_rand&lt;-<span class="st"> </span>outm<span class="op">$</span>SummVC1[<span class="dv">1</span>] </span>
-<span id="cb11-13"><a href="#cb11-13"></a>        S.E_rand&lt;-<span class="st"> </span>outm<span class="op">$</span>SummVC1[<span class="dv">2</span>] </span>
-<span id="cb11-14"><a href="#cb11-14"></a>        out &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">estimates_fix=</span>estimates_fix, <span class="dt">SE_Mean =</span> SE_Mean, <span class="dt">DF =</span> DF, </span>
-<span id="cb11-15"><a href="#cb11-15"></a>                        <span class="dt">DP_Mm=</span> DP_Mm,  <span class="dt">DP_RM=</span> DP_RM, <span class="dt">estimates_rand=</span>estimates_rand, <span class="dt">S.E_rand=</span>S.E_rand,</span>
-<span id="cb11-16"><a href="#cb11-16"></a>                        <span class="dt">stringsAsFactors=</span><span class="ot">FALSE</span>)</span>
-<span id="cb11-17"><a href="#cb11-17"></a>        <span class="kw">return</span>(out)</span>
-<span id="cb11-18"><a href="#cb11-18"></a>            }</span>
+<span id="cb11-2"><a href="#cb11-2"></a>my.hglm &lt;-<span class="st"> </span><span class="cf">function</span>(cT, i, Phenos, Z, X, X.disp) {</span>
+<span id="cb11-3"><a href="#cb11-3"></a>    y &lt;-<span class="st"> </span>Phenos[, cT]</span>
+<span id="cb11-4"><a href="#cb11-4"></a>    y2 &lt;&lt;-<span class="st"> </span>Phenos[, cT]</span>
+<span id="cb11-5"><a href="#cb11-5"></a>    outm &lt;-<span class="st"> </span><span class="kw">hglm</span>(<span class="dt">y =</span> y, <span class="dt">X =</span> <span class="kw">as.matrix</span>(geno[, i]), <span class="dt">Z =</span> chol.G2, <span class="dt">X.disp =</span> <span class="kw">as.matrix</span>(geno[, </span>
+<span id="cb11-6"><a href="#cb11-6"></a>        i]), <span class="dt">family =</span> <span class="kw">gaussian</span>(<span class="dt">link =</span> log))</span>
+<span id="cb11-7"><a href="#cb11-7"></a>    estimates_fix &lt;-<span class="st"> </span>outm<span class="op">$</span>fixef</span>
+<span id="cb11-8"><a href="#cb11-8"></a>    SE_Mean &lt;-<span class="st"> </span>outm<span class="op">$</span>SeFe</span>
+<span id="cb11-9"><a href="#cb11-9"></a>    DF &lt;-<span class="st"> </span>outm<span class="op">$</span>dfReFe</span>
+<span id="cb11-10"><a href="#cb11-10"></a>    DP_Mm &lt;-<span class="st"> </span>outm<span class="op">$</span>varFix</span>
+<span id="cb11-11"><a href="#cb11-11"></a>    DP_RM &lt;-<span class="st"> </span>outm<span class="op">$</span>varRanef</span>
+<span id="cb11-12"><a href="#cb11-12"></a>    estimates_rand &lt;-<span class="st"> </span>outm<span class="op">$</span>SummVC1[<span class="dv">1</span>]</span>
+<span id="cb11-13"><a href="#cb11-13"></a>    S.E_rand &lt;-<span class="st"> </span>outm<span class="op">$</span>SummVC1[<span class="dv">2</span>]</span>
+<span id="cb11-14"><a href="#cb11-14"></a>    out &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="dt">estimates_fix =</span> estimates_fix, <span class="dt">SE_Mean =</span> SE_Mean, <span class="dt">DF =</span> DF, </span>
+<span id="cb11-15"><a href="#cb11-15"></a>        <span class="dt">DP_Mm =</span> DP_Mm, <span class="dt">DP_RM =</span> DP_RM, <span class="dt">estimates_rand =</span> estimates_rand, <span class="dt">S.E_rand =</span> S.E_rand, </span>
+<span id="cb11-16"><a href="#cb11-16"></a>        <span class="dt">stringsAsFactors =</span> <span class="ot">FALSE</span>)</span>
+<span id="cb11-17"><a href="#cb11-17"></a>    <span class="kw">return</span>(out)</span>
+<span id="cb11-18"><a href="#cb11-18"></a>}</span>
 <span id="cb11-19"><a href="#cb11-19"></a></span>
 <span id="cb11-20"><a href="#cb11-20"></a><span class="co"># Aanalysis for cadmium phenotype</span></span>
-<span id="cb11-21"><a href="#cb11-21"></a>            TF &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA</span>,<span class="dt">nrow=</span><span class="kw">dim</span>(geno)[<span class="dv">2</span>],<span class="dt">ncol=</span><span class="dv">7</span>)</span>
-<span id="cb11-22"><a href="#cb11-22"></a>    </span>
-<span id="cb11-23"><a href="#cb11-23"></a>            <span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">dim</span>(geno)[<span class="dv">2</span>])</span>
-<span id="cb11-24"><a href="#cb11-24"></a>        {</span>
-<span id="cb11-25"><a href="#cb11-25"></a>            <span class="kw">try</span>(</span>
-<span id="cb11-26"><a href="#cb11-26"></a>             {</span>
-<span id="cb11-27"><a href="#cb11-27"></a>             outm &lt;-<span class="st"> </span><span class="kw">my.hglm</span>(<span class="dt">cT=</span><span class="dv">5</span>,<span class="dt">i=</span>i,<span class="dt">Phenos=</span>pheno_data,<span class="dt">Z=</span>chol.G2,<span class="dt">X=</span>geno,<span class="dt">X.disp=</span>geno)</span>
-<span id="cb11-28"><a href="#cb11-28"></a>             TF[i,] &lt;-<span class="st"> </span><span class="kw">as.numeric</span>(outm)</span>
-<span id="cb11-29"><a href="#cb11-29"></a>            <span class="kw">print</span>(i)</span>
-<span id="cb11-30"><a href="#cb11-30"></a>             }, <span class="dt">silent =</span> <span class="ot">TRUE</span>)</span>
-<span id="cb11-31"><a href="#cb11-31"></a>            }</span></code></pre></div>
+<span id="cb11-21"><a href="#cb11-21"></a>TF &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="ot">NA</span>, <span class="dt">nrow =</span> <span class="kw">dim</span>(geno)[<span class="dv">2</span>], <span class="dt">ncol =</span> <span class="dv">7</span>)</span>
+<span id="cb11-22"><a href="#cb11-22"></a></span>
+<span id="cb11-23"><a href="#cb11-23"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">dim</span>(geno)[<span class="dv">2</span>]) {</span>
+<span id="cb11-24"><a href="#cb11-24"></a>    <span class="kw">try</span>({</span>
+<span id="cb11-25"><a href="#cb11-25"></a>        outm &lt;-<span class="st"> </span><span class="kw">my.hglm</span>(<span class="dt">cT =</span> <span class="dv">5</span>, <span class="dt">i =</span> i, <span class="dt">Phenos =</span> pheno_data, <span class="dt">Z =</span> chol.G2, <span class="dt">X =</span> geno, </span>
+<span id="cb11-26"><a href="#cb11-26"></a>            <span class="dt">X.disp =</span> geno)</span>
+<span id="cb11-27"><a href="#cb11-27"></a>        TF[i, ] &lt;-<span class="st"> </span><span class="kw">as.numeric</span>(outm)</span>
+<span id="cb11-28"><a href="#cb11-28"></a>        <span class="kw">print</span>(i)</span>
+<span id="cb11-29"><a href="#cb11-29"></a>    }, <span class="dt">silent =</span> <span class="ot">TRUE</span>)</span>
+<span id="cb11-30"><a href="#cb11-30"></a>}</span></code></pre></div>
 </div>
 <div id="step-4-now-build-function-to-process-the-hglm-output-and-determine-p-values" class="section level3">
 <h3><strong>Step 4</strong>: Now build function to process the HGLM output and determine p-values</h3>
@@ -1122,47 +1122,45 @@ h4 { /* Header 4 */
 <li>Add finally select appropriate columns for Manhattan plot</li>
 </ul>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1"></a><span class="co"># read the raw data file</span></span>
-<span id="cb12-2"><a href="#cb12-2"></a>my.hglm1&lt;-<span class="cf">function</span>(pheno, geno1, map1){</span>
-<span id="cb12-3"><a href="#cb12-3"></a><span class="co"># add the column names</span></span>
-<span id="cb12-4"><a href="#cb12-4"></a><span class="kw">colnames</span>(pheno)&lt;-<span class="kw">c</span>(<span class="st">&quot;estimates_fix&quot;</span>, <span class="st">&quot;SE_Mean&quot;</span>, <span class="st">&quot;DF&quot;</span>, </span>
-<span id="cb12-5"><a href="#cb12-5"></a>                       <span class="st">&quot;DP_Mm&quot;</span>,<span class="st">&quot;DP_RM&quot;</span>, <span class="st">&quot;estimates_rand&quot;</span>, <span class="st">&quot;S.E_rand&quot;</span>)</span>
-<span id="cb12-6"><a href="#cb12-6"></a><span class="co"># add the marker name and position</span></span>
-<span id="cb12-7"><a href="#cb12-7"></a>markernames&lt;-<span class="kw">data.frame</span>(<span class="kw">colnames</span>(geno1))</span>
-<span id="cb12-8"><a href="#cb12-8"></a><span class="co"># Now combine the output file</span></span>
-<span id="cb12-9"><a href="#cb12-9"></a>pheno &lt;-<span class="kw">cbind</span>(markernames, pheno)</span>
-<span id="cb12-10"><a href="#cb12-10"></a><span class="co"># Now estimate the p-values for mean and dispersion part using library dplyr</span></span>
-<span id="cb12-11"><a href="#cb12-11"></a>pheno&lt;-<span class="kw">mutate</span>(pheno,</span>
-<span id="cb12-12"><a href="#cb12-12"></a>                  <span class="dt">p.mean =</span> <span class="dv">2</span><span class="op">*</span><span class="kw">pt</span>(<span class="op">-</span><span class="kw">abs</span>(estimates_fix<span class="op">/</span>SE_Mean),<span class="dt">df=</span><span class="dv">1</span>),</span>
-<span id="cb12-13"><a href="#cb12-13"></a>                  <span class="dt">p.disp =</span> <span class="dv">2</span><span class="op">*</span><span class="kw">pt</span>(<span class="op">-</span><span class="kw">abs</span>(estimates_rand<span class="op">/</span>S.E_rand),<span class="dt">df=</span><span class="dv">1</span>)</span>
-<span id="cb12-14"><a href="#cb12-14"></a>                    )</span>
-<span id="cb12-15"><a href="#cb12-15"></a><span class="co"># now remove the markers with NA values in the file</span></span>
-<span id="cb12-16"><a href="#cb12-16"></a>pheno&lt;-<span class="st"> </span>pheno <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">is.na</span>(p.mean))</span>
-<span id="cb12-17"><a href="#cb12-17"></a><span class="co"># match the markers between map file and outfile</span></span>
-<span id="cb12-18"><a href="#cb12-18"></a><span class="kw">colnames</span>(pheno)&lt;-<span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;estimates_fix&quot;</span>, <span class="st">&quot;SE_Mean&quot;</span>, <span class="st">&quot;DF&quot;</span>, <span class="st">&quot;DP_Mm&quot;</span>, <span class="st">&quot;DP_RM&quot;</span>,</span>
-<span id="cb12-19"><a href="#cb12-19"></a>                       <span class="st">&quot;estimates_rand&quot;</span>, <span class="st">&quot;S.E_rand&quot;</span>, <span class="st">&quot;p.mean&quot;</span>,<span class="st">&quot;p.disp&quot;</span>)</span>
-<span id="cb12-20"><a href="#cb12-20"></a>map&lt;-map</span>
-<span id="cb12-21"><a href="#cb12-21"></a><span class="co"># now combine the mapfile and outputfile</span></span>
-<span id="cb12-22"><a href="#cb12-22"></a>            pheno&lt;-<span class="kw">cbind</span>(map, pheno)</span>
-<span id="cb12-23"><a href="#cb12-23"></a><span class="co"># now select the appropriate columns for Manhattan plot</span></span>
-<span id="cb12-24"><a href="#cb12-24"></a>pheno&lt;-<span class="kw">select</span>(marker, chrom, pos, p.disp) </span>
-<span id="cb12-25"><a href="#cb12-25"></a><span class="kw">colnames</span>(pheno)&lt;-<span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;chrom&quot;</span>, <span class="st">&quot;pos&quot;</span>, <span class="st">&quot;P&quot;</span>)</span>
-<span id="cb12-26"><a href="#cb12-26"></a>        }</span>
-<span id="cb12-27"><a href="#cb12-27"></a></span>
-<span id="cb12-28"><a href="#cb12-28"></a><span class="co">#Now use the function above to extract hglm output and save it. </span></span>
-<span id="cb12-29"><a href="#cb12-29"></a><span class="co"># read the file obtained from hglm output</span></span>
-<span id="cb12-30"><a href="#cb12-30"></a>hglm_CD&lt;-TF</span>
-<span id="cb12-31"><a href="#cb12-31"></a></span>
-<span id="cb12-32"><a href="#cb12-32"></a><span class="co"># load marker data</span></span>
-<span id="cb12-33"><a href="#cb12-33"></a>geno1&lt;-(<span class="dt">file=</span><span class="st">&quot;~/Documents/vGWAS/Data/Raw_data.rds&quot;</span>)</span>
-<span id="cb12-34"><a href="#cb12-34"></a></span>
-<span id="cb12-35"><a href="#cb12-35"></a><span class="co"># now add the map info to the file for Manhattan plots</span></span>
-<span id="cb12-36"><a href="#cb12-36"></a>map_final&lt;-(<span class="dt">file=</span><span class="st">&quot;~/Documents/vGWAS/Data/Raw_data/map_final.rds&quot;</span>)</span>
-<span id="cb12-37"><a href="#cb12-37"></a></span>
-<span id="cb12-38"><a href="#cb12-38"></a><span class="co"># Now use the function</span></span>
-<span id="cb12-39"><a href="#cb12-39"></a>hglm_CD_final&lt;-<span class="kw">my.hglm1</span>(<span class="dt">pheno=</span> hglm_CD, <span class="dt">geno1=</span>geno1, <span class="dt">map1 =</span>map_final)</span>
-<span id="cb12-40"><a href="#cb12-40"></a></span>
-<span id="cb12-41"><a href="#cb12-41"></a><span class="co"># save the file in folder</span></span>
-<span id="cb12-42"><a href="#cb12-42"></a><span class="kw">write.csv</span>(hglm_CD_final, <span class="dt">file=</span><span class="st">&quot;hglm_cd.csv&quot;</span>, <span class="dt">sep=</span><span class="st">&#39;,&#39;</span>, <span class="dt">row.names =</span> <span class="ot">FALSE</span>)</span></code></pre></div>
+<span id="cb12-2"><a href="#cb12-2"></a>my.hglm1 &lt;-<span class="st"> </span><span class="cf">function</span>(pheno, geno1, map1) {</span>
+<span id="cb12-3"><a href="#cb12-3"></a>    <span class="co"># add the column names</span></span>
+<span id="cb12-4"><a href="#cb12-4"></a>    <span class="kw">colnames</span>(pheno) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;estimates_fix&quot;</span>, <span class="st">&quot;SE_Mean&quot;</span>, <span class="st">&quot;DF&quot;</span>, <span class="st">&quot;DP_Mm&quot;</span>, <span class="st">&quot;DP_RM&quot;</span>, </span>
+<span id="cb12-5"><a href="#cb12-5"></a>        <span class="st">&quot;estimates_rand&quot;</span>, <span class="st">&quot;S.E_rand&quot;</span>)</span>
+<span id="cb12-6"><a href="#cb12-6"></a>    <span class="co"># add the marker name and position</span></span>
+<span id="cb12-7"><a href="#cb12-7"></a>    markernames &lt;-<span class="st"> </span><span class="kw">data.frame</span>(<span class="kw">colnames</span>(geno1))</span>
+<span id="cb12-8"><a href="#cb12-8"></a>    <span class="co"># Now combine the output file</span></span>
+<span id="cb12-9"><a href="#cb12-9"></a>    pheno &lt;-<span class="st"> </span><span class="kw">cbind</span>(markernames, pheno)</span>
+<span id="cb12-10"><a href="#cb12-10"></a>    <span class="co"># Now estimate the p-values for mean and dispersion part using library dplyr</span></span>
+<span id="cb12-11"><a href="#cb12-11"></a>    pheno &lt;-<span class="st"> </span><span class="kw">mutate</span>(pheno, <span class="dt">p.mean =</span> <span class="dv">2</span> <span class="op">*</span><span class="st"> </span><span class="kw">pt</span>(<span class="op">-</span><span class="kw">abs</span>(estimates_fix<span class="op">/</span>SE_Mean), <span class="dt">df =</span> <span class="dv">1</span>), </span>
+<span id="cb12-12"><a href="#cb12-12"></a>        <span class="dt">p.disp =</span> <span class="dv">2</span> <span class="op">*</span><span class="st"> </span><span class="kw">pt</span>(<span class="op">-</span><span class="kw">abs</span>(estimates_rand<span class="op">/</span>S.E_rand), <span class="dt">df =</span> <span class="dv">1</span>))</span>
+<span id="cb12-13"><a href="#cb12-13"></a>    <span class="co"># now remove the markers with NA values in the file</span></span>
+<span id="cb12-14"><a href="#cb12-14"></a>    pheno &lt;-<span class="st"> </span>pheno <span class="op">%&gt;%</span><span class="st"> </span><span class="kw">filter</span>(<span class="op">!</span><span class="kw">is.na</span>(p.mean))</span>
+<span id="cb12-15"><a href="#cb12-15"></a>    <span class="co"># match the markers between map file and outfile</span></span>
+<span id="cb12-16"><a href="#cb12-16"></a>    <span class="kw">colnames</span>(pheno) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;estimates_fix&quot;</span>, <span class="st">&quot;SE_Mean&quot;</span>, <span class="st">&quot;DF&quot;</span>, <span class="st">&quot;DP_Mm&quot;</span>, </span>
+<span id="cb12-17"><a href="#cb12-17"></a>        <span class="st">&quot;DP_RM&quot;</span>, <span class="st">&quot;estimates_rand&quot;</span>, <span class="st">&quot;S.E_rand&quot;</span>, <span class="st">&quot;p.mean&quot;</span>, <span class="st">&quot;p.disp&quot;</span>)</span>
+<span id="cb12-18"><a href="#cb12-18"></a>    map &lt;-<span class="st"> </span>map</span>
+<span id="cb12-19"><a href="#cb12-19"></a>    <span class="co"># now combine the mapfile and outputfile</span></span>
+<span id="cb12-20"><a href="#cb12-20"></a>    pheno &lt;-<span class="st"> </span><span class="kw">cbind</span>(map, pheno)</span>
+<span id="cb12-21"><a href="#cb12-21"></a>    <span class="co"># now select the appropriate columns for Manhattan plot</span></span>
+<span id="cb12-22"><a href="#cb12-22"></a>    pheno &lt;-<span class="st"> </span><span class="kw">select</span>(marker, chrom, pos, p.disp)</span>
+<span id="cb12-23"><a href="#cb12-23"></a>    <span class="kw">colnames</span>(pheno) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;chrom&quot;</span>, <span class="st">&quot;pos&quot;</span>, <span class="st">&quot;P&quot;</span>)</span>
+<span id="cb12-24"><a href="#cb12-24"></a>}</span>
+<span id="cb12-25"><a href="#cb12-25"></a></span>
+<span id="cb12-26"><a href="#cb12-26"></a><span class="co"># Now use the function above to extract hglm output and save it.  read the</span></span>
+<span id="cb12-27"><a href="#cb12-27"></a><span class="co"># file obtained from hglm output</span></span>
+<span id="cb12-28"><a href="#cb12-28"></a>hglm_CD &lt;-<span class="st"> </span>TF</span>
+<span id="cb12-29"><a href="#cb12-29"></a></span>
+<span id="cb12-30"><a href="#cb12-30"></a><span class="co"># load marker data</span></span>
+<span id="cb12-31"><a href="#cb12-31"></a>geno1 &lt;-<span class="st"> </span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/vGWAS/Data/Raw_data.rds&quot;</span>)</span>
+<span id="cb12-32"><a href="#cb12-32"></a></span>
+<span id="cb12-33"><a href="#cb12-33"></a><span class="co"># now add the map info to the file for Manhattan plots</span></span>
+<span id="cb12-34"><a href="#cb12-34"></a>map_final &lt;-<span class="st"> </span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/vGWAS/Data/Raw_data/map_final.rds&quot;</span>)</span>
+<span id="cb12-35"><a href="#cb12-35"></a></span>
+<span id="cb12-36"><a href="#cb12-36"></a><span class="co"># Now use the function</span></span>
+<span id="cb12-37"><a href="#cb12-37"></a>hglm_CD_final &lt;-<span class="st"> </span><span class="kw">my.hglm1</span>(<span class="dt">pheno =</span> hglm_CD, <span class="dt">geno1 =</span> geno1, <span class="dt">map1 =</span> map_final)</span>
+<span id="cb12-38"><a href="#cb12-38"></a></span>
+<span id="cb12-39"><a href="#cb12-39"></a><span class="co"># save the file in folder</span></span>
+<span id="cb12-40"><a href="#cb12-40"></a><span class="kw">write.csv</span>(hglm_CD_final, <span class="dt">file =</span> <span class="st">&quot;hglm_cd.csv&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;,&quot;</span>, <span class="dt">row.names =</span> <span class="ot">FALSE</span>)</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -1181,44 +1179,49 @@ h4 { /* Header 4 */
 <li>Combined the p-values from all the three files into one file and rename the columns</li>
 </ul>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a><span class="co"># First we will create a function to upload all the 3 csv files function</span></span>
-<span id="cb13-2"><a href="#cb13-2"></a>      <span class="kw">setwd</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/vGWAS_output&quot;</span>)</span>
-<span id="cb13-3"><a href="#cb13-3"></a>      import.all&lt;-<span class="cf">function</span>(mypath,mypattern,...)</span>
-<span id="cb13-4"><a href="#cb13-4"></a>      {</span>
-<span id="cb13-5"><a href="#cb13-5"></a>        tmp.list<span class="fl">.1</span>&lt;-<span class="kw">list.files</span>(mypath, <span class="dt">pattern=</span>mypattern)</span>
-<span id="cb13-6"><a href="#cb13-6"></a>        tmp.list<span class="fl">.2</span>&lt;-<span class="kw">list</span>(<span class="dt">length=</span><span class="kw">length</span>(tmp.list<span class="fl">.1</span>))</span>
-<span id="cb13-7"><a href="#cb13-7"></a>        <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">length</span>(tmp.list<span class="fl">.1</span>)){tmp.list<span class="fl">.2</span>[[i]]&lt;-<span class="kw">read.csv</span>(tmp.list<span class="fl">.1</span>[i],...)}</span>
-<span id="cb13-8"><a href="#cb13-8"></a>        <span class="kw">names</span>(tmp.list<span class="fl">.2</span>)&lt;-tmp.list<span class="fl">.1</span></span>
-<span id="cb13-9"><a href="#cb13-9"></a>        tmp.list<span class="fl">.2</span></span>
-<span id="cb13-10"><a href="#cb13-10"></a>      }</span>
-<span id="cb13-11"><a href="#cb13-11"></a>      </span>
-<span id="cb13-12"><a href="#cb13-12"></a><span class="co"># Now upload the all the files</span></span>
-<span id="cb13-13"><a href="#cb13-13"></a>csv.import&lt;-<span class="kw">import.all</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/vGWAS_output&quot;</span>, <span class="st">&quot;csv$&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;,&quot;</span>)</span>
-<span id="cb13-14"><a href="#cb13-14"></a></span>
-<span id="cb13-15"><a href="#cb13-15"></a><span class="co"># here we define the separator of entries in the csv files to be comma.</span></span>
-<span id="cb13-16"><a href="#cb13-16"></a>gwas_cd&lt;-csv.import<span class="op">$</span>gwas_cd.csv</span>
-<span id="cb13-17"><a href="#cb13-17"></a>dglm_cd&lt;-csv.import<span class="op">$</span>dglm_cd.csv</span>
-<span id="cb13-18"><a href="#cb13-18"></a>hglm_cd&lt;-csv.import<span class="op">$</span>hglm_cd.csv</span>
-<span id="cb13-19"><a href="#cb13-19"></a></span>
-<span id="cb13-20"><a href="#cb13-20"></a><span class="co"># subset the data</span></span>
-<span id="cb13-21"><a href="#cb13-21"></a><span class="kw">colnames</span>(gwas_cd)&lt;-<span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;chrom&quot;</span>, <span class="st">&quot;pos&quot;</span>, <span class="st">&quot;gwas_p&quot;</span>)</span>
-<span id="cb13-22"><a href="#cb13-22"></a>dglm_cd&lt;-<span class="st"> </span>dglm_cd[, <span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">5</span>)]</span>
-<span id="cb13-23"><a href="#cb13-23"></a><span class="kw">colnames</span>(dglm_cd)&lt;-<span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>,<span class="st">&quot;dglm_p.disp&quot;</span>)</span>
-<span id="cb13-24"><a href="#cb13-24"></a>hglm_cd&lt;-hglm_cd[, <span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">4</span>)]</span>
-<span id="cb13-25"><a href="#cb13-25"></a><span class="kw">colnames</span>(hglm_cd)&lt;-<span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;hglm_p.disp&quot;</span>)</span>
-<span id="cb13-26"><a href="#cb13-26"></a></span>
-<span id="cb13-27"><a href="#cb13-27"></a><span class="co">#Now merge all the three data files</span></span>
+<span id="cb13-2"><a href="#cb13-2"></a><span class="kw">setwd</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/vGWAS_output&quot;</span>)</span>
+<span id="cb13-3"><a href="#cb13-3"></a>import.all &lt;-<span class="st"> </span><span class="cf">function</span>(mypath, mypattern, ...) {</span>
+<span id="cb13-4"><a href="#cb13-4"></a>    tmp.list<span class="fl">.1</span> &lt;-<span class="st"> </span><span class="kw">list.files</span>(mypath, <span class="dt">pattern =</span> mypattern)</span>
+<span id="cb13-5"><a href="#cb13-5"></a>    tmp.list<span class="fl">.2</span> &lt;-<span class="st"> </span><span class="kw">list</span>(<span class="dt">length =</span> <span class="kw">length</span>(tmp.list<span class="fl">.1</span>))</span>
+<span id="cb13-6"><a href="#cb13-6"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">length</span>(tmp.list<span class="fl">.1</span>)) {</span>
+<span id="cb13-7"><a href="#cb13-7"></a>        tmp.list<span class="fl">.2</span>[[i]] &lt;-<span class="st"> </span><span class="kw">read.csv</span>(tmp.list<span class="fl">.1</span>[i], ...)</span>
+<span id="cb13-8"><a href="#cb13-8"></a>    }</span>
+<span id="cb13-9"><a href="#cb13-9"></a>    <span class="kw">names</span>(tmp.list<span class="fl">.2</span>) &lt;-<span class="st"> </span>tmp.list<span class="fl">.1</span></span>
+<span id="cb13-10"><a href="#cb13-10"></a>    tmp.list<span class="fl">.2</span></span>
+<span id="cb13-11"><a href="#cb13-11"></a>}</span>
+<span id="cb13-12"><a href="#cb13-12"></a></span>
+<span id="cb13-13"><a href="#cb13-13"></a><span class="co"># Now upload the all the files</span></span>
+<span id="cb13-14"><a href="#cb13-14"></a>csv.import &lt;-<span class="st"> </span><span class="kw">import.all</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Data/vGWAS_output&quot;</span>, <span class="st">&quot;csv$&quot;</span>, </span>
+<span id="cb13-15"><a href="#cb13-15"></a>    <span class="dt">sep =</span> <span class="st">&quot;,&quot;</span>)</span>
+<span id="cb13-16"><a href="#cb13-16"></a></span>
+<span id="cb13-17"><a href="#cb13-17"></a><span class="co"># here we define the separator of entries in the csv files to be comma.</span></span>
+<span id="cb13-18"><a href="#cb13-18"></a>gwas_cd &lt;-<span class="st"> </span>csv.import<span class="op">$</span>gwas_cd.csv</span>
+<span id="cb13-19"><a href="#cb13-19"></a>dglm_cd &lt;-<span class="st"> </span>csv.import<span class="op">$</span>dglm_cd.csv</span>
+<span id="cb13-20"><a href="#cb13-20"></a>hglm_cd &lt;-<span class="st"> </span>csv.import<span class="op">$</span>hglm_cd.csv</span>
+<span id="cb13-21"><a href="#cb13-21"></a></span>
+<span id="cb13-22"><a href="#cb13-22"></a><span class="co"># subset the data</span></span>
+<span id="cb13-23"><a href="#cb13-23"></a><span class="kw">colnames</span>(gwas_cd) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;chrom&quot;</span>, <span class="st">&quot;pos&quot;</span>, <span class="st">&quot;gwas_p&quot;</span>)</span>
+<span id="cb13-24"><a href="#cb13-24"></a>dglm_cd &lt;-<span class="st"> </span>dglm_cd[, <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">5</span>)]</span>
+<span id="cb13-25"><a href="#cb13-25"></a><span class="kw">colnames</span>(dglm_cd) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;dglm_p.disp&quot;</span>)</span>
+<span id="cb13-26"><a href="#cb13-26"></a>hglm_cd &lt;-<span class="st"> </span>hglm_cd[, <span class="kw">c</span>(<span class="dv">1</span>, <span class="dv">4</span>)]</span>
+<span id="cb13-27"><a href="#cb13-27"></a><span class="kw">colnames</span>(hglm_cd) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;hglm_p.disp&quot;</span>)</span>
 <span id="cb13-28"><a href="#cb13-28"></a></span>
-<span id="cb13-29"><a href="#cb13-29"></a>all_p&lt;-<span class="kw">Reduce</span>(merge, <span class="kw">list</span>(gwas_cd, dglm_cd, hglm_cd))</span></code></pre></div>
+<span id="cb13-29"><a href="#cb13-29"></a><span class="co"># Now merge all the three data files</span></span>
+<span id="cb13-30"><a href="#cb13-30"></a></span>
+<span id="cb13-31"><a href="#cb13-31"></a>all_p &lt;-<span class="st"> </span><span class="kw">Reduce</span>(merge, <span class="kw">list</span>(gwas_cd, dglm_cd, hglm_cd))</span></code></pre></div>
 </div>
 <div id="draw-the-circular-manhattan-plot" class="section level3">
 <h3>Draw the Circular Manhattan plot</h3>
 <div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a><span class="kw">setwd</span>(<span class="st">&quot;~/Documents/GitHub/vGWAS/Figures&quot;</span>)</span>
-<span id="cb14-2"><a href="#cb14-2"></a><span class="kw">CMplot</span>(all_p,<span class="dt">plot.type=</span><span class="st">&quot;c&quot;</span>,<span class="dt">r=</span><span class="fl">0.4</span>, <span class="dt">col=</span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="st">&quot;grey30&quot;</span>,<span class="st">&quot;slategray&quot;</span>, <span class="ot">NA</span>,<span class="st">&quot;lightskyblue1&quot;</span>,<span class="st">&quot;lightseagreen&quot;</span>, <span class="ot">NA</span>, <span class="st">&quot;thistle&quot;</span>,<span class="st">&quot;pink&quot;</span>, <span class="ot">NA</span>),<span class="dv">3</span>,<span class="dv">3</span>,<span class="dt">byrow=</span>T),</span>
-<span id="cb14-3"><a href="#cb14-3"></a>         <span class="dt">chr.labels=</span><span class="kw">paste</span>(<span class="st">&quot;&quot;</span>,<span class="kw">c</span>(<span class="st">&quot;1A&quot;</span>, <span class="st">&quot;1B&quot;</span>, <span class="st">&quot;1D&quot;</span>, <span class="st">&quot;2A&quot;</span>, <span class="st">&quot;2B&quot;</span>, <span class="st">&quot;2D&quot;</span>,<span class="st">&quot;3A&quot;</span>, <span class="st">&quot;3B&quot;</span>, <span class="st">&quot;3D&quot;</span>,<span class="st">&quot;4A&quot;</span>, <span class="st">&quot;4B&quot;</span>, <span class="st">&quot;4D&quot;</span>,<span class="st">&quot;5A&quot;</span>, </span>
-<span id="cb14-4"><a href="#cb14-4"></a>    <span class="st">&quot;5B&quot;</span>, <span class="st">&quot;5D&quot;</span>,<span class="st">&quot;6A&quot;</span>, <span class="st">&quot;6B&quot;</span>, <span class="st">&quot;6D&quot;</span>, <span class="st">&quot;7A&quot;</span>, <span class="st">&quot;7B&quot;</span>, <span class="st">&quot;7D&quot;</span>, <span class="st">&quot;UN&quot;</span>),<span class="dt">sep=</span><span class="st">&quot;&quot;</span>), <span class="dt">cir.legend=</span><span class="ot">TRUE</span>,<span class="dt">cir.legend.cex=</span><span class="fl">0.8</span>,</span>
-<span id="cb14-5"><a href="#cb14-5"></a>         <span class="dt">threshold=</span><span class="fl">1e-5</span>, <span class="dt">outward=</span><span class="ot">FALSE</span>,<span class="dt">amplify=</span><span class="ot">TRUE</span>,</span>
-<span id="cb14-6"><a href="#cb14-6"></a>         <span class="dt">threshold.lty=</span><span class="kw">c</span>(<span class="dv">1</span>,<span class="dv">2</span>), <span class="dt">signal.line=</span><span class="dv">1</span>,<span class="dt">signal.col=</span><span class="st">&quot;orangered&quot;</span>,<span class="dt">threshold.col=</span><span class="st">&quot;blue&quot;</span>,</span>
-<span id="cb14-7"><a href="#cb14-7"></a>         <span class="dt">threshold.lwd=</span><span class="fl">0.5</span>, <span class="dt">signal.cex=</span><span class="fl">1.5</span>,<span class="dt">signal.pch=</span><span class="dv">19</span>, <span class="dt">cir.chr.h=</span><span class="fl">1.5</span>,<span class="dt">chr.den.col=</span><span class="st">&quot;black&quot;</span>,<span class="dt">file=</span><span class="st">&quot;jpg&quot;</span>,<span class="dt">memo=</span><span class="st">&quot;&quot;</span>,<span class="dt">dpi=</span><span class="dv">300</span>)</span></code></pre></div>
+<span id="cb14-2"><a href="#cb14-2"></a><span class="kw">CMplot</span>(all_p, <span class="dt">plot.type =</span> <span class="st">&quot;c&quot;</span>, <span class="dt">r =</span> <span class="fl">0.4</span>, <span class="dt">col =</span> <span class="kw">matrix</span>(<span class="kw">c</span>(<span class="st">&quot;grey30&quot;</span>, <span class="st">&quot;slategray&quot;</span>, </span>
+<span id="cb14-3"><a href="#cb14-3"></a>    <span class="ot">NA</span>, <span class="st">&quot;lightskyblue1&quot;</span>, <span class="st">&quot;lightseagreen&quot;</span>, <span class="ot">NA</span>, <span class="st">&quot;thistle&quot;</span>, <span class="st">&quot;pink&quot;</span>, <span class="ot">NA</span>), <span class="dv">3</span>, <span class="dv">3</span>, </span>
+<span id="cb14-4"><a href="#cb14-4"></a>    <span class="dt">byrow =</span> T), <span class="dt">chr.labels =</span> <span class="kw">paste</span>(<span class="st">&quot;&quot;</span>, <span class="kw">c</span>(<span class="st">&quot;1A&quot;</span>, <span class="st">&quot;1B&quot;</span>, <span class="st">&quot;1D&quot;</span>, <span class="st">&quot;2A&quot;</span>, <span class="st">&quot;2B&quot;</span>, <span class="st">&quot;2D&quot;</span>, </span>
+<span id="cb14-5"><a href="#cb14-5"></a>    <span class="st">&quot;3A&quot;</span>, <span class="st">&quot;3B&quot;</span>, <span class="st">&quot;3D&quot;</span>, <span class="st">&quot;4A&quot;</span>, <span class="st">&quot;4B&quot;</span>, <span class="st">&quot;4D&quot;</span>, <span class="st">&quot;5A&quot;</span>, <span class="st">&quot;5B&quot;</span>, <span class="st">&quot;5D&quot;</span>, <span class="st">&quot;6A&quot;</span>, <span class="st">&quot;6B&quot;</span>, <span class="st">&quot;6D&quot;</span>, </span>
+<span id="cb14-6"><a href="#cb14-6"></a>    <span class="st">&quot;7A&quot;</span>, <span class="st">&quot;7B&quot;</span>, <span class="st">&quot;7D&quot;</span>, <span class="st">&quot;UN&quot;</span>), <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>), <span class="dt">cir.legend =</span> <span class="ot">TRUE</span>, <span class="dt">cir.legend.cex =</span> <span class="fl">0.8</span>, </span>
+<span id="cb14-7"><a href="#cb14-7"></a>    <span class="dt">threshold =</span> <span class="fl">1e-05</span>, <span class="dt">outward =</span> <span class="ot">FALSE</span>, <span class="dt">amplify =</span> <span class="ot">TRUE</span>, <span class="dt">threshold.lty =</span> <span class="kw">c</span>(<span class="dv">1</span>, </span>
+<span id="cb14-8"><a href="#cb14-8"></a>        <span class="dv">2</span>), <span class="dt">signal.line =</span> <span class="dv">1</span>, <span class="dt">signal.col =</span> <span class="st">&quot;orangered&quot;</span>, <span class="dt">threshold.col =</span> <span class="st">&quot;blue&quot;</span>, </span>
+<span id="cb14-9"><a href="#cb14-9"></a>    <span class="dt">threshold.lwd =</span> <span class="fl">0.5</span>, <span class="dt">signal.cex =</span> <span class="fl">1.5</span>, <span class="dt">signal.pch =</span> <span class="dv">19</span>, <span class="dt">cir.chr.h =</span> <span class="fl">1.5</span>, </span>
+<span id="cb14-10"><a href="#cb14-10"></a>    <span class="dt">chr.den.col =</span> <span class="st">&quot;black&quot;</span>, <span class="dt">file =</span> <span class="st">&quot;jpg&quot;</span>, <span class="dt">memo =</span> <span class="st">&quot;&quot;</span>, <span class="dt">dpi =</span> <span class="dv">300</span>)</span></code></pre></div>
 <hr />
 </div>
 </div>
@@ -1229,20 +1232,21 @@ h4 { /* Header 4 */
 <li>Here we are providing the sample codes used to draw the heat map of epistasis between markers associated with variance-heterogeneity (Figure 3 of the manuscript).</li>
 </ul>
 <div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a><span class="co"># Read the p-value data file</span></span>
-<span id="cb15-2"><a href="#cb15-2"></a>epis_pvalues&lt;-<span class="kw">read.csv</span>(<span class="dt">file=</span><span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Epistasis_output/epistasis_pvalues.csv&quot;</span>,</span>
-<span id="cb15-3"><a href="#cb15-3"></a>                       <span class="dt">header=</span><span class="ot">TRUE</span>, <span class="dt">row.names =</span> <span class="dv">1</span>)</span>
+<span id="cb15-2"><a href="#cb15-2"></a>epis_pvalues &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Epistasis_output/epistasis_pvalues.csv&quot;</span>, </span>
+<span id="cb15-3"><a href="#cb15-3"></a>    <span class="dt">header =</span> <span class="ot">TRUE</span>, <span class="dt">row.names =</span> <span class="dv">1</span>)</span>
 <span id="cb15-4"><a href="#cb15-4"></a></span>
 <span id="cb15-5"><a href="#cb15-5"></a><span class="co"># Convert NA into zeros all the values into -log10</span></span>
-<span id="cb15-6"><a href="#cb15-6"></a>epis_pvalues1&lt;-<span class="kw">as.matrix</span>(epis_pvalues)</span>
-<span id="cb15-7"><a href="#cb15-7"></a>epis_pvalues1&lt;-<span class="st"> </span><span class="op">-</span><span class="kw">log10</span>(epis_pvalues1)</span>
-<span id="cb15-8"><a href="#cb15-8"></a>epis_pvalues1[<span class="kw">is.na</span>(epis_pvalues1)]&lt;-<span class="fl">0.00</span></span>
+<span id="cb15-6"><a href="#cb15-6"></a>epis_pvalues1 &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(epis_pvalues)</span>
+<span id="cb15-7"><a href="#cb15-7"></a>epis_pvalues1 &lt;-<span class="st"> </span><span class="op">-</span><span class="kw">log10</span>(epis_pvalues1)</span>
+<span id="cb15-8"><a href="#cb15-8"></a>epis_pvalues1[<span class="kw">is.na</span>(epis_pvalues1)] &lt;-<span class="st"> </span><span class="dv">0</span></span>
 <span id="cb15-9"><a href="#cb15-9"></a></span>
 <span id="cb15-10"><a href="#cb15-10"></a><span class="co"># Draw the heat map</span></span>
-<span id="cb15-11"><a href="#cb15-11"></a><span class="kw">png</span>(<span class="dt">file=</span><span class="st">&quot;~/Documents/GitHub/vGWAS/Figures/epistasis_heatmap.png&quot;</span>,</span>
-<span id="cb15-12"><a href="#cb15-12"></a>    <span class="dt">width=</span><span class="dv">12</span>, <span class="dt">height =</span><span class="dv">9</span>, <span class="dt">units =</span> <span class="st">&#39;in&#39;</span>,<span class="dt">res=</span><span class="dv">400</span>)</span>
-<span id="cb15-13"><a href="#cb15-13"></a><span class="kw">pheatmap</span>(epis_pvalues1,  <span class="dt">clustering_distance_rows =</span> <span class="st">&quot;correlation&quot;</span>,<span class="dt">clustering_distance_cols=</span><span class="st">&quot;correlation&quot;</span>, <span class="dt">scale =</span> <span class="st">&quot;none&quot;</span>, <span class="dt">legend_labels =</span> <span class="st">&quot;-log10(p-value&quot;</span>, </span>
-<span id="cb15-14"><a href="#cb15-14"></a>         <span class="dt">fontsize=</span><span class="dv">13</span>, <span class="dt">angle_col =</span> <span class="dv">45</span>)</span>
-<span id="cb15-15"><a href="#cb15-15"></a><span class="kw">dev.off</span>()</span></code></pre></div>
+<span id="cb15-11"><a href="#cb15-11"></a><span class="kw">png</span>(<span class="dt">file =</span> <span class="st">&quot;~/Documents/GitHub/vGWAS/Figures/epistasis_heatmap.png&quot;</span>, <span class="dt">width =</span> <span class="dv">12</span>, </span>
+<span id="cb15-12"><a href="#cb15-12"></a>    <span class="dt">height =</span> <span class="dv">9</span>, <span class="dt">units =</span> <span class="st">&quot;in&quot;</span>, <span class="dt">res =</span> <span class="dv">600</span>)</span>
+<span id="cb15-13"><a href="#cb15-13"></a>plot &lt;-<span class="st"> </span><span class="kw">pheatmap</span>(epis_pvalues1, <span class="dt">cluster_rows =</span> F, <span class="dt">cluster_cols =</span> F, <span class="dt">scale =</span> <span class="st">&quot;none&quot;</span>, </span>
+<span id="cb15-14"><a href="#cb15-14"></a>    <span class="dt">legend_labels =</span> <span class="st">&quot;-log10(p-value&quot;</span>, <span class="dt">fontsize =</span> <span class="dv">12</span>, <span class="dt">angle_col =</span> <span class="dv">90</span>)</span>
+<span id="cb15-15"><a href="#cb15-15"></a>plot</span>
+<span id="cb15-16"><a href="#cb15-16"></a><span class="kw">dev.off</span>()</span></code></pre></div>
 <hr />
 </div>
 <div id="violin-plots" class="section level2">
@@ -1269,50 +1273,6 @@ h4 { /* Header 4 */
 <span id="cb16-16"><a href="#cb16-16"></a><span class="st">  </span><span class="kw">theme</span>(<span class="dt">legend.title =</span> <span class="kw">element_text</span>(<span class="dt">colour=</span><span class="st">&quot;black&quot;</span>, <span class="dt">size=</span><span class="dv">14</span>),</span>
 <span id="cb16-17"><a href="#cb16-17"></a>        <span class="dt">legend.text =</span> <span class="kw">element_text</span>(<span class="dt">colour=</span><span class="st">&quot;grey0&quot;</span>, <span class="dt">size=</span><span class="dv">11</span>))<span class="op">+</span></span>
 <span id="cb16-18"><a href="#cb16-18"></a><span class="st">  </span><span class="kw">guides</span>(<span class="dt">fill=</span><span class="kw">guide_legend</span>(<span class="dt">title=</span><span class="st">&quot;Genotype&quot;</span>))</span></code></pre></div>
-<hr />
-</div>
-<div id="epistatic-interaction-effective-plot" class="section level2">
-<h2><strong>Epistatic Interaction Effective Plot</strong></h2>
-<hr />
-<ul>
-<li>Here we are providing the sample codes used to draw interaction effective plot (Figure 5 of the manuscript)</li>
-</ul>
-<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1"></a><span class="co"># Read the data file</span></span>
-<span id="cb17-2"><a href="#cb17-2"></a>epis&lt;-<span class="kw">read.csv</span>(<span class="dt">file=</span><span class="st">&quot;~/Documents/GitHub/vGWAS/Data/Raw_data/epistasis_effectiveplot_DATA.csv&quot;</span>, <span class="dt">header=</span><span class="ot">TRUE</span>)</span>
-<span id="cb17-3"><a href="#cb17-3"></a><span class="co"># Filter the two markers for interaction</span></span>
-<span id="cb17-4"><a href="#cb17-4"></a>epis_filter&lt;-epis<span class="op">%&gt;%</span><span class="kw">filter</span>(marker<span class="op">==</span><span class="kw">c</span>(<span class="st">&quot;IAAV3067&quot;</span>, <span class="st">&quot;IWA7579&quot;</span>))</span>
-<span id="cb17-5"><a href="#cb17-5"></a><span class="co"># Create function for data summary</span></span>
-<span id="cb17-6"><a href="#cb17-6"></a>data_summary &lt;-<span class="st"> </span><span class="cf">function</span>(data, varname, groupnames){</span>
-<span id="cb17-7"><a href="#cb17-7"></a>  <span class="kw">require</span>(plyr)</span>
-<span id="cb17-8"><a href="#cb17-8"></a>  summary_func &lt;-<span class="st"> </span><span class="cf">function</span>(x, col){</span>
-<span id="cb17-9"><a href="#cb17-9"></a>    <span class="kw">c</span>(<span class="dt">mean =</span> <span class="kw">mean</span>(x[[col]], <span class="dt">na.rm=</span><span class="ot">TRUE</span>),</span>
-<span id="cb17-10"><a href="#cb17-10"></a>      <span class="dt">sd =</span> <span class="kw">sd</span>(x[[col]], <span class="dt">na.rm=</span><span class="ot">TRUE</span>))</span>
-<span id="cb17-11"><a href="#cb17-11"></a>  }</span>
-<span id="cb17-12"><a href="#cb17-12"></a>  data_sum&lt;-<span class="kw">ddply</span>(data, groupnames, <span class="dt">.fun=</span>summary_func,</span>
-<span id="cb17-13"><a href="#cb17-13"></a>                  varname)</span>
-<span id="cb17-14"><a href="#cb17-14"></a>  data_sum &lt;-<span class="st"> </span><span class="kw">rename</span>(data_sum, <span class="kw">c</span>(<span class="st">&quot;mean&quot;</span> =<span class="st"> </span>varname))</span>
-<span id="cb17-15"><a href="#cb17-15"></a>  <span class="kw">return</span>(data_sum)</span>
-<span id="cb17-16"><a href="#cb17-16"></a>}</span>
-<span id="cb17-17"><a href="#cb17-17"></a>epis_sum &lt;-<span class="st"> </span><span class="kw">data_summary</span>(epis_filter, <span class="dt">varname=</span><span class="st">&quot;phenotype&quot;</span>, </span>
-<span id="cb17-18"><a href="#cb17-18"></a>                    <span class="dt">groupnames=</span><span class="kw">c</span>(<span class="st">&quot;marker&quot;</span>, <span class="st">&quot;allele&quot;</span>))</span>
-<span id="cb17-19"><a href="#cb17-19"></a>epis_sum<span class="op">$</span>phenotype&lt;-<span class="kw">round</span>(epis_sum<span class="op">$</span>phenotype, <span class="dt">digits=</span><span class="dv">3</span>)</span>
-<span id="cb17-20"><a href="#cb17-20"></a>epis_sum<span class="op">$</span>sd&lt;-<span class="kw">round</span>(epis_sum<span class="op">$</span>sd, <span class="dt">digits=</span><span class="dv">3</span>)</span>
-<span id="cb17-21"><a href="#cb17-21"></a><span class="co"># Drop Na</span></span>
-<span id="cb17-22"><a href="#cb17-22"></a>epis_sum&lt;-epis_sum<span class="op">%&gt;%</span><span class="kw">na.omit</span>() </span>
-<span id="cb17-23"><a href="#cb17-23"></a><span class="co"># Draw the effetive plot</span></span>
-<span id="cb17-24"><a href="#cb17-24"></a><span class="kw">ggplot</span>(epis_sum, <span class="kw">aes</span>(<span class="dt">x=</span>allele, <span class="dt">y=</span>phenotype, <span class="dt">group=</span>marker, <span class="dt">color=</span>marker)) <span class="op">+</span></span>
-<span id="cb17-25"><a href="#cb17-25"></a><span class="st">  </span><span class="kw">geom_errorbar</span>(<span class="kw">aes</span>(<span class="dt">ymin=</span>phenotype<span class="op">-</span>sd, <span class="dt">ymax=</span>phenotype<span class="op">+</span>sd), <span class="dt">width=</span>.<span class="dv">1</span>) <span class="op">+</span></span>
-<span id="cb17-26"><a href="#cb17-26"></a><span class="st">  </span><span class="kw">geom_line</span>() <span class="op">+</span><span class="st"> </span><span class="kw">geom_point</span>()<span class="op">+</span></span>
-<span id="cb17-27"><a href="#cb17-27"></a><span class="st">  </span><span class="kw">scale_color_manual</span>(<span class="dt">values=</span><span class="kw">c</span>(<span class="st">&quot;darkred&quot;</span>, <span class="st">&quot;blue&quot;</span>))<span class="op">+</span></span>
-<span id="cb17-28"><a href="#cb17-28"></a><span class="st">  </span><span class="kw">labs</span>(<span class="dt">title=</span><span class="st">&quot;&quot;</span>,<span class="dt">x=</span><span class="st">&quot;&quot;</span>, <span class="dt">y =</span> <span class="st">&quot;Cadmium conc.(mg)&quot;</span>)<span class="op">+</span></span>
-<span id="cb17-29"><a href="#cb17-29"></a><span class="st">  </span><span class="kw">theme_classic</span>()<span class="op">+</span></span>
-<span id="cb17-30"><a href="#cb17-30"></a><span class="st">  </span><span class="kw">theme</span>(<span class="dt">axis.text=</span> <span class="kw">element_text</span>(<span class="dt">color =</span> <span class="st">&quot;black&quot;</span>, <span class="dt">size =</span> <span class="dv">12</span>))<span class="op">+</span></span>
-<span id="cb17-31"><a href="#cb17-31"></a><span class="st">  </span><span class="kw">theme</span> (<span class="dt">plot.title =</span> <span class="kw">element_text</span>(),</span>
-<span id="cb17-32"><a href="#cb17-32"></a>         <span class="dt">axis.title.y =</span> <span class="kw">element_text</span>(<span class="dt">color=</span><span class="st">&quot;black&quot;</span>, <span class="dt">size=</span><span class="dv">12</span>)) <span class="op">+</span></span>
-<span id="cb17-33"><a href="#cb17-33"></a><span class="st">  </span><span class="kw">theme</span>(<span class="dt">legend.title =</span> <span class="kw">element_text</span>(<span class="dt">colour=</span><span class="st">&quot;black&quot;</span>, <span class="dt">size=</span><span class="dv">14</span>),</span>
-<span id="cb17-34"><a href="#cb17-34"></a>        <span class="dt">legend.text =</span> <span class="kw">element_text</span>(<span class="dt">colour=</span><span class="st">&quot;black&quot;</span>, <span class="dt">size=</span><span class="dv">12</span>))<span class="op">+</span><span class="st"> </span><span class="co"># add and modify the legends</span></span>
-<span id="cb17-35"><a href="#cb17-35"></a><span class="st">  </span><span class="kw">guides</span>(<span class="dt">color=</span><span class="kw">guide_legend</span>(<span class="dt">title=</span><span class="st">&quot;&quot;</span>))<span class="op">+</span></span>
-<span id="cb17-36"><a href="#cb17-36"></a><span class="st">  </span><span class="kw">theme</span>(<span class="dt">legend.position =</span> <span class="kw">c</span>(<span class="fl">0.15</span>, <span class="fl">0.9</span>))</span></code></pre></div>
 <div id="end" class="section level5">
 <h5>===================END===================</h5>
 </div>
