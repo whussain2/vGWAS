@@ -414,7 +414,7 @@ epis_pvalues1[is.na(epis_pvalues1)]<-0.00
 # Draw the heat map
 png(file="~/Documents/GitHub/vGWAS/Figures/epistasis_heatmap.png",
     width=12, height =9, units = 'in',res=600)
-plot<-pheatmap(epis_pvalues1, cluster_rows = F, cluster_cols = F,scale = "none", legend_labels = "-log10(p-value",fontsize=12, angle_col =90)
+plot<-pheatmap(epis_pvalues1, cluster_rows = FALSE, cluster_cols = FALSE,scale = "none", legend_labels = "-log10(p-value)",fontsize=12, angle_col =90)
 plot
 dev.off()
 
