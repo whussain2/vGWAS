@@ -1,5 +1,5 @@
 # General
-This repository  contains all the scripts and data used for the manuscript: "Variance-heterogeneity genome-wide mapping for cadmium in bread wheat revealed novel genomic loci and epistatic interactions".  Preprint is available at [https://doi.org/10.1101/668087](https://doi.org/10.1101/668087). 
+This repository  contains all the scripts and data used for the manuscript: "Variance-heterogeneity genome-wide mapping for cadmium in bread wheat revealed novel genomic loci and epistatic interactions".  Full length paper is available at [https://acsess.onlinelibrary.wiley.com/doi/abs/10.1002/tpg2.20011](https://acsess.onlinelibrary.wiley.com/doi/abs/10.1002/tpg2.20011). 
 
 ***
 ## Varaince-heterogeneity QTL 
