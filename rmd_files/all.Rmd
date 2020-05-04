@@ -66,6 +66,7 @@ Packages <- c("dglm", "hglm", "gdata","readr","tidyr","ggthemes",
                     "ggcorrplot", "statmod", "pheatmap", "ggfortify")
 lapply(Packages, library, character.only = TRUE)
 ```
+
 **Note: Before showing the codes for DGLM and HGLM analysis, I will first begin with the principal component (PC) analysis of marker data and extract the top fours PCs which is required later for DGLM analysis to account for population structure**
 
 ***
@@ -135,6 +136,7 @@ autoplot(prcomp(pca[,-6]), data = pca_data_final, colour = 'Type')+
 * Here we will be presenting the codes to show how to model variance-heterogeneity using DGLM in the context of GWAS. 
 * As the analysis is computationally demanding and time consuming we performed this analysis on Holland Computing Center(HCC) server at University of Nebraska, Lincoln. 
 * Here we are just providing the snippet of codes and not showing any outputs.
+
 ## Read the marker and phenotypic, and principal components
 
 ```{r, eval=FALSE}
@@ -393,6 +395,96 @@ CMplot(all_p,plot.type="c",r=0.4, col=matrix(c("grey30","slategray", NA,"lightsk
          threshold=1e-5, outward=FALSE,amplify=TRUE,
          threshold.lty=c(1,2), signal.line=1,signal.col="orangered",threshold.col="blue",
          threshold.lwd=0.5, signal.cex=1.5,signal.pch=19, cir.chr.h=1.5,chr.den.col="black",file="jpg",memo="",dpi=300)
+```
+
+***
+## **Code for Interaction Analysis**
+***
+
+* Here in this section I am showing the sample code that was used for Epistasis analysis.
+* Linear model was used to check the pairwise interaction between two markers at one time.
+* The general model used is given below:
+\[
+model <- lm(trait+marker1*marker2+pca1 + pca2 + pca3 + pca4)\\
+\text{here pca are the principle components used as covariates}
+\]
+
+* $for loop$ was used to run all the pairwise interactions.
+
+```{r, eval=FALSE}
+# Sample Codes for Epistasis analysis between markers
+# Here a linear model is used to check pairwise interactions between markers. 
+# Two markers are run at one time for interactions
+# for loop is used to run all the pairwise interactions between marker subsets.
+
+# Reading data files
+   map<-read.csv(file="../data/map.csv")
+   geno<-read.csv(file="../data/markers.csv")
+   pheno<-read.csv(file="../data/pheno.final.csv")
+   pca<-read.csv(file="../data/.csv")
+   geno2 <- geno[,-1]
+   
+# Create data.frames to save the output  
+   TF_M1_M <- matrix(NA,nrow=dim(geno2)[2],ncol=dim(geno2)[2])
+   rownames(TF_M1_M) <- colnames(TF_M1_M) <- colnames(geno2)
+   TF_M2_M <- TF_M1.M2_M <- TF_M1_SE <- TF_M2_SE <- TF_M1.M2_SE <- TF_M1_PV <- TF_M2_PV <- TF_M1.M2_PV <- TF_M1_M
+
+# Use for loop to run interaction analysis
+   for(i in 1:dim(geno2)[2])
+     {
+      for(j in 1:dim(geno2)[2])
+        {
+# Run the linear model (lm) 
+         model_1<-lm(pheno[,1]~geno2[,i]*geno2[,j]+pca[,2] + pca[, 3] + pca[, 4] + pca[, 5])
+         summary(model_1)
+         ts <- summary(model_1)$coefficients
+
+         i1 <- rownames(ts) %in% 'geno2[, i]'
+         i2 <- rownames(ts) %in% 'geno2[, j]'
+         i3 <- rownames(ts) %in% 'geno2[, i]:geno2[, j]'
+ 
+# Coefficients for MAIN marker 1
+         if(any(i1))
+            {
+             p1 = which(i1)
+             TF_M1_M[i,j]     <- ts[p1,1] # Extract estimates for marker 1
+             TF_M1_SE[i,j]    <- ts[p1,2] # Extract SE  for marker 1
+             TF_M1_PV[i,j]    <- ts[p1,4] # Extract p-values  for marker 1
+            }
+# Coefficients for MAIN marker 2
+         if(any(i2))
+            {
+             p2 = which(i2)
+             TF_M2_M[i,j]     <- ts[p2,1] # Extract estimates  for marker 2
+             TF_M2_SE[i,j]    <- ts[p2,2] # Extract SE   for marker 2
+             TF_M2_PV[i,j]    <- ts[p2,4] # Extract p-values   for marker 2
+            }
+# Coefficients for INTERACTIONs between SNP1*SNP2
+         if(any(i3))
+            {
+             p3 = which(i3)
+             TF_M1.M2_M[i,j]  <- ts[p3,1] # Extract estimates  for interactions marker1*marker2
+             TF_M1.M2_SE[i,j] <- ts[p3,2] # Extract SE   for interactions marker1*marker2
+             TF_M1.M2_PV[i,j] <- ts[p3,4] # Extract p-values  for interactions marker1*marker2
+            }
+         print(c(i,j))
+        }
+     }
+
+# Save the files
+   write.csv(TF_M1_M,file='TF_M1_M.csv') # estimates for main marker 1
+   write.csv(TF_M2_M,file='TF_M2_M.csv') # estimates for for main marker 2
+   write.csv(TF_M1.M2_M,file='TF_M1.M2_M.csv') # estimates for interactions marker1*marker2
+
+   write.csv(TF_M1_SE,file='TF_M1_SE.csv') # standard error for main marker 1
+   write.csv(TF_M2_SE,file='TF_M2_SE.csv') # standard error for main marker 2
+   write.csv(TF_M1.M2_SE,file='TF_M1.M2_SE.csv') # standard error for interactions marker1*marker2
+
+   write.csv(TF_M1_PV,file='TF_M1_PV.csv') #  p-value  for main effect marker 1
+   write.csv(TF_M2_PV,file='TF_M2_PV.csv')  # p-value  for main effect marker 2
+   write.csv(TF_M1.M2_PV,file='TF_M1.M2_PV.csv') # p-values for interactions marker 1* marker 2
+   
+   ####################################################END#################################
 ```
 
 ***
